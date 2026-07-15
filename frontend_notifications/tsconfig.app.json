@@ -5,6 +5,13 @@
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
     "types": ["vite/client"],
+    "typeRoots": [
+      "./node_modules", // Key line
+      "./node_modules/@types", 
+      "./types", // Key line
+      "./server/types", 
+      "./server/api/types"
+    ],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
