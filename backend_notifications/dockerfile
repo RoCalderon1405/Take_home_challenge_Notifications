@@ -1,0 +1,19 @@
+
+FROM node:24.18.0-trixie
+
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar el resto de los archivos de la aplicación
+COPY . .
+
+# Generar cliente de Prisma
+# RUN npx prisma generate
+
+#Exponer el puertoser
+EXPOSE 3000

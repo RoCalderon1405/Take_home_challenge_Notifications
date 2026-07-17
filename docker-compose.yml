@@ -1,0 +1,56 @@
+name: notifications-app
+
+services:
+  db:
+    container_name: notifications-db
+    image: postgres:17.10-trixie
+    restart: always
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    
+    ports: 
+      - "5432:5432"
+    
+    volumes:
+    - notifications-postgres-data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: notifications-backend
+    build:
+      context: ./backend_notifications
+      dockerfile: Dockerfile
+    
+    restart: unless-stopped
+
+    environment:
+      PORT: ${PORT}
+      NODE_ENV: ${NODE_ENV}
+      API_URL: ${API_URL}
+      HTTP_TIMEOUT: ${HTTP_TIMEOUT}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+
+    ports:
+      - "3000:3000"
+
+    command: npm run start:dev
+
+    depends_on:
+      db: 
+       condition: service_healthy
+
+volumes:
+    notifications-postgres-data:
+      name: notifications-postgres-data
