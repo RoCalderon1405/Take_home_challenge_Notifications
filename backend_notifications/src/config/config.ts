@@ -1,6 +1,12 @@
-// import 'dotenv/config';
+import dotenv from 'dotenv';
+import { resolve } from 'node:path';
 import { z } from 'zod';
 
+dotenv.config({
+  path: resolve(process.cwd(), '../.env'),
+});
+
+// Después defines y ejecutas el esquema.
 export const envSchema = z
   .object({
     PORT: z
@@ -9,7 +15,7 @@ export const envSchema = z
       .transform(Number),
     ALLOWED_ORIGINS: z
       .string()
-      .min(1, { message: 'allowedOrigins is required' })
+      .min(1, { message: 'ALLOWED_ORIGINS is required' })
       .transform((val) => val.split(',').map((origin) => origin.trim())),
   })
   .loose();
@@ -18,11 +24,9 @@ type EnvType = z.infer<typeof envSchema>;
 
 const envParsed = envSchema.safeParse(process.env);
 
-console.log(process.env.ALLOWED_ORIGINS);
-
 
 if (!envParsed.success) {
-  console.log(' config validations error:', z.treeifyError(envParsed.error));
+  console.log('Config validations error:', z.treeifyError(envParsed.error));
   throw new Error('Invalid environment variables');
 }
 

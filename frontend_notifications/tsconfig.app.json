@@ -4,11 +4,11 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "typeRoots": [
-      "./node_modules", // Key line
+      "./node_modules",
       "./node_modules/@types", 
-      "./types", // Key line
+      "./types",
       "./server/types", 
       "./server/api/types"
     ],

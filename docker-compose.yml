@@ -5,52 +5,117 @@ services:
     container_name: notifications-db
     image: postgres:17.10-trixie
     restart: always
-
+    env_file:
+      - ./.env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    
-    ports: 
+    ports:
       - "5432:5432"
-    
     volumes:
-    - notifications-postgres-data:/var/lib/postgresql/data
-
+      - notifications-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
-        ]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   backend:
     container_name: notifications-backend
+
     build:
       context: ./backend_notifications
       dockerfile: Dockerfile
-    
-    restart: unless-stopped
+
+    restart: "no"
+
+    env_file:
+      - ./.env
+
+   
 
     environment:
       PORT: ${PORT}
-      NODE_ENV: ${NODE_ENV}
-      API_URL: ${API_URL}
-      HTTP_TIMEOUT: ${HTTP_TIMEOUT}
+      NODE_ENV: development
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
 
     ports:
-      - "3000:3000"
+      - "${PORT}:${PORT}"
 
-    command: npm run start:dev
+    command: npm run start
 
     depends_on:
-      db: 
-       condition: service_healthy
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:${PORT}/api/notifications/getHello').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+      
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend_notifications/src
+          target: /app/src
+
+        - action: sync+restart
+          path: ./backend_notifications/tsconfig.json
+          target: /app/tsconfig.json
+
+        - action: sync+restart
+          path: ./backend_notifications/tsconfig.build.json
+          target: /app/tsconfig.build.json
+
+        - action: rebuild
+          path: ./backend_notifications/package.json
+
+        - action: rebuild
+          path: ./backend_notifications/package-lock.json
+
+        - action: rebuild
+          path: ./backend_notifications/Dockerfile
+
+  frontend:
+    container_name: notifications-frontend
+    build:
+      context: ./frontend_notifications
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      VITE_HOST: 0.0.0.0
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend_notifications:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend_notifications/src
+          target: /app/src
+        - action: sync
+          path: ./frontend_notifications/public
+          target: /app/public
+        - action: rebuild
+          path: ./frontend_notifications/package.json
+        - action: rebuild
+          path: ./frontend_notifications/package-lock.json
+        - action: rebuild
+          path: ./frontend_notifications/Dockerfile
 
 volumes:
-    notifications-postgres-data:
-      name: notifications-postgres-data
+  notifications-postgres-data:
+    name: notifications-postgres-data

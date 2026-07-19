@@ -10,21 +10,19 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: '1',
-  });
+  // app.enableVersioning({
+  //   type: VersioningType.URI,
+  //   defaultVersion: '1',
+  // });
 
   app.enableCors({
-    origin: Envs.allowedOrigins,
+    origin: Envs.ALLOWED_ORIGINS,
     credentials: true,
     // methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-
-
-  await app.listen(process.env.PORT!);
+  await app.listen(Number(process.env.PORT ?? 3002), '0.0.0.0');
   logger.log(`🚀 Application is running on: http://localhost:${process.env.PORT}/api`);
 }
 bootstrap();

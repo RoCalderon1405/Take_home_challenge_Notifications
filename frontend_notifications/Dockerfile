@@ -1,4 +1,3 @@
-
 FROM node:24.18.0-trixie-slim
 
 WORKDIR /app
@@ -6,10 +5,10 @@ WORKDIR /app
 ENV NODE_ENV=development
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 
-EXPOSE 3000
+EXPOSE 5173
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
