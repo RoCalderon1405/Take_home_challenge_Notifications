@@ -9,3 +9,8 @@ coverage
 Dockerfile
 README.md
 *.log
+
+
+.agents/*
+.claude/*
+.windsurf/*

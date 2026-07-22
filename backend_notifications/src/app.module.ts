@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { resolve } from 'node:path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -7,8 +8,8 @@ import { AppService } from './app.service';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../.env',
-    })
+      envFilePath: resolve(process.cwd(), '../.env'),
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

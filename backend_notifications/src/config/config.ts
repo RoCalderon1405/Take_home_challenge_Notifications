@@ -17,6 +17,9 @@ export const envSchema = z
       .string()
       .min(1, { message: 'ALLOWED_ORIGINS is required' })
       .transform((val) => val.split(',').map((origin) => origin.trim())),
+    DATABASE_URL: z.string().min(1, { message: 'DATABASE_URL is required' }),
+    REDIS_URL: z.string().min(1, { message: 'REDIS_URL is required' }),
+    // JWT_SECRET: z.string().min(1, { message: 'JWT_SECRET is required' }),
   })
   .loose();
 
