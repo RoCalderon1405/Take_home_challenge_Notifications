@@ -4,7 +4,7 @@ import { Logger, VersioningType } from '@nestjs/common';
 import { Envs } from './config/config';
 
 async function bootstrap() {
-  const logger = new Logger('App');
+  const logger = new Logger('Notifications - App');
 
   const app = await NestFactory.create(AppModule);
 

@@ -98,6 +98,10 @@ services:
           path: ./backend_notifications/prisma.config.ts
           target: /app/prisma.config.ts
 
+        - action: sync+restart
+          path: ./backend_notifications/prisma/schema.prisma
+          target: /app/prisma/schema.prisma
+
         - action: rebuild
           path: ./backend_notifications/package.json
 
