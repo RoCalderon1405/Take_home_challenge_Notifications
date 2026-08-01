@@ -1,0 +1,29 @@
+model Notification {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  userId    String @map("user_id") @db.Uuid
+  channelId Int    @map("channel_id") @db.SmallInt
+
+  title     String @db.VarChar(200)
+  content   String @db.Text
+  recipient String @db.VarChar(500)
+
+  status    NotificationStatus @default(PENDING)
+  lastError String?            @map("last_error") @db.Text
+  sentAt    DateTime?          @map("sent_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_user")
+
+  channel NotificationChannel @relation(fields: [channelId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_notifications_channel")
+
+  deliveries NotificationDelivery[]
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@index([channelId], map: "idx_notifications_channel_id")
+  @@index([status], map: "idx_notifications_status")
+  @@index([userId, createdAt], map: "idx_notifications_user_created_at")
+  @@map("notifications")
+}

@@ -1,0 +1,25 @@
+enum UserStatus {
+  ACTIVE
+  BANNED
+  INACTIVE
+
+  @@map("user_status")
+}
+
+enum NotificationStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+
+  @@map("notification_status")
+}
+
+enum DeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+
+  @@map("delivery_status")
+}

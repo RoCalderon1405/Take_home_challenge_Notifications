@@ -8,7 +8,8 @@ export class AuthService {
     return 'This action adds a new auth';
   }
 
-  findAll() {
+  async signIn(username: string, password:string): Promise<any> {
+    // const user = await
     return `This action returns all auth`;
   }
 
