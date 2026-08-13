@@ -1,4 +1,3 @@
-import { Envs } from '@app/config/config';
 import { ConfigService } from '@nestjs/config';
 import { createHmac } from 'node:crypto';
 import * as argon2 from 'argon2';
@@ -9,7 +8,7 @@ export class PasswordHaserService {
   private readonly _pepper: string;
 
   constructor(private readonly configService: ConfigService) {
-    this._pepper = Envs.PASSWORD_PEPPER;
+    this._pepper = configService.getOrThrow<string>('PASSWORD_PEPPER');
   }
 
   async hash(password: string): Promise<string> {

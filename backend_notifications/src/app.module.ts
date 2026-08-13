@@ -1,32 +1,45 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { resolve } from 'node:path';
+
 import KeyvRedis from '@keyv/redis';
-import { Envs } from '@app/config/config';
 import { CacheModule } from '@nestjs/cache-manager';
+
 import { AppService } from '@app/app.service';
-import { PrismaModule } from './modules/prisma/prisma.module';
 import { AppController } from '@app/app.controller';
+import { PrismaModule } from '@app/modules/prisma/prisma.module';
 import { UsersModule } from '@app/modules/users/users.module';
+
+import { validateEnv } from '@app/config/config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: resolve(process.cwd(), '../.env'),
+      validate: validateEnv,
     }),
+
     CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: async () => {
+
+      inject: [ConfigService],
+
+      useFactory: async (configService: ConfigService) => {
+        const redisUrl =
+          configService.getOrThrow<string>('REDIS_URL');
+
         return {
           ttl: 5000,
-          stores: [new KeyvRedis(Envs.REDIS_URL)],
+          stores: new KeyvRedis(redisUrl),
         };
       },
     }),
+
     PrismaModule,
     UsersModule,
   ],
+
   controllers: [AppController],
   providers: [AppService],
 })
