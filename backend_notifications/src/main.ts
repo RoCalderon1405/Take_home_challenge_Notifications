@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger, VersioningType } from '@nestjs/common';
+import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { Envs } from './config/config';
 
 async function bootstrap() {
@@ -10,11 +10,6 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // app.enableVersioning({
-  //   type: VersioningType.URI,
-  //   defaultVersion: '1',
-  // });
-
   app.enableCors({
     origin: Envs.ALLOWED_ORIGINS,
     credentials: true,
@@ -22,7 +17,17 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
   await app.listen(Number(process.env.PORT ?? 3002), '0.0.0.0');
-  logger.log(`🚀 Application is running on: http://localhost:${process.env.PORT}/api`);
+  logger.log(
+    `🚀 Application is running on: http://localhost:${process.env.PORT}/api`,
+  );
 }
 bootstrap();

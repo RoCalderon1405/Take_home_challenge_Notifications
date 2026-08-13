@@ -19,7 +19,7 @@ export const envSchema = z
       .transform((val) => val.split(',').map((origin) => origin.trim())),
     DATABASE_URL: z.string().min(1, { message: 'DATABASE_URL is required' }),
     REDIS_URL: z.string().min(1, { message: 'REDIS_URL is required' }),
-    // JWT_SECRET: z.string().min(1, { message: 'JWT_SECRET is required' }),
+    PASSWORD_PEPPER: z.string().min(32, { message: 'PASSWORD_PEPPER is required' }),
   })
   .loose();
 
@@ -38,5 +38,5 @@ export const Envs: EnvType = {
   ALLOWED_ORIGINS: envParsed.data.ALLOWED_ORIGINS,
   DATABASE_URL: process.env.DATABASE_URL || '',
   REDIS_URL: process.env.REDIS_URL || '',
-  JWT_SECRET: process.env.JWT_SECRET || '',
+  PASSWORD_PEPPER: process.env.PASSWORD_PEPPER || '',
 }

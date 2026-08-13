@@ -1,27 +1,50 @@
 import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '../../generated/prisma/client';
+import { Prisma } from '@app/generated/prisma/client';
+import { UserCreateInput, UserModel } from '@app/generated/prisma/models';
+import { PasswordHaserService } from '@app/common/security/password-hasher.service';
 
 @Injectable()
 export class UsersService {
+  constructor(
+    private readonly _prismaService: PrismaService,
+    private readonly _passwordHasherService: PasswordHaserService,
+  ) {}
 
-  constructor(private readonly _prismaService: PrismaService){}
+  async create(createUserDto: UserCreateInput) {
+    const { email, passwordHash, ...userData } = createUserDto;
 
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+    const passwordHashed = await this._passwordHasherService.hash(passwordHash);
+
+    try {
+      const userCreated = await this._prismaService.user.create({
+        data: {
+          email: createUserDto.email.trim().toLowerCase(),
+          passwordHash,
+          ...userData,
+        },
+      });
+      return userCreated;
+    } catch (error: unknown) {
+      const message = error instanceof Prisma.PrismaClientKnownRequestError;
+      throw new Error(`Error creating user: ${message}`);
+    }
   }
 
   findAll() {
     return `This action returns all users`;
   }
 
-  async findOne(id: Prisma.UserWhereUniqueInput) {
+  async findOne(id: Prisma.UserWhereUniqueInput): Promise<UserModel> {
     const user = await this._prismaService.user.findUnique({
-      where: id
-    })
-    return `This action returns a #${id} user`;
+      where: id,
+    });
+
+    if (!user) {
+      throw new Error(`User with id: ${id} not found`);
+    }
+    return user;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
