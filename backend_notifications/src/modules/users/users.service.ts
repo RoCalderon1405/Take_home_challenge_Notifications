@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@app/generated/prisma/client';
-import { UserCreateInput, UserModel } from '@app/generated/prisma/models';
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
+import { CreateUserDto } from './request/create-user.dto';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { UserResponseDto } from './response';
 
 @Injectable()
 export class UsersService {
@@ -12,44 +12,60 @@ export class UsersService {
     private readonly _passwordHasherService: PasswordHaserService,
   ) {}
 
-  async create(createUserDto: UserCreateInput) {
-    const { email, passwordHash, ...userData } = createUserDto;
+  async create(createUserDto: CreateUserDto) {
+    const { password, email } = createUserDto;
 
-    const passwordHashed = await this._passwordHasherService.hash(passwordHash);
+    const passwordHashed = await this._passwordHasherService.hash(password);
 
     try {
       const userCreated = await this._prismaService.user.create({
         data: {
-          email: createUserDto.email.trim().toLowerCase(),
-          passwordHash,
-          ...userData,
+          email,
+          passwordHash: passwordHashed,
         },
+        omit: { passwordHash: true },
       });
+
       return userCreated;
-    } catch (error: unknown) {
-      const message = error instanceof Prisma.PrismaClientKnownRequestError;
-      throw new Error(`Error creating user: ${message}`);
+    } catch (error: PrismaClientKnownRequestError | any) {
+      if (error.code === 'P2002') {
+        throw new Error(`User with email: ${email} already exists`);
+      }
+      throw new Error(`Error creating user: ${error.message}`);
     }
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll() {
+    const users = await this._prismaService.user.findMany({
+      omit: { passwordHash: true },
+    });
+
+    return users;
   }
 
-  async findOne(id: Prisma.UserWhereUniqueInput): Promise<UserModel> {
+  async findOneById(id: string) {
     const user = await this._prismaService.user.findUnique({
-      where: id,
+      where: { id },
+      omit: { passwordHash: true },
     });
 
     if (!user) {
-      throw new Error(`User with id: ${id} not found`);
+      throw new NotFoundException(`User with id: ${id} not found`);
     }
     return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findOneByEmailForAuth(email: string) {
+    const user = await this._prismaService.user.findUnique({
+      where: { email },
+    });
+
+    return user;
   }
+
+  // update(id: number, updateUserDto: UpdateUserDto) {
+  //   return `This action updates a #${id} user`;
+  // }
 
   remove(id: number) {
     return `This action removes a #${id} user`;

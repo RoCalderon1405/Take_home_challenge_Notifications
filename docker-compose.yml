@@ -82,7 +82,7 @@ services:
       
     develop:
       watch:
-        - action: sync+restart
+        - action: sync
           path: ./backend_notifications/src
           target: /app/src
 
