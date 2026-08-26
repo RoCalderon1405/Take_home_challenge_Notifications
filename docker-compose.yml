@@ -61,7 +61,7 @@ services:
     ports:
       - "${PORT}:${PORT}"
 
-    command: sh -c "npx prisma generate && npm run start:dev"
+    command: sh -c "npx prisma generate && npm run start"
 
     depends_on:
       db:
@@ -82,7 +82,7 @@ services:
       
     develop:
       watch:
-        - action: sync
+        - action: sync+restart
           path: ./backend_notifications/src
           target: /app/src
 
