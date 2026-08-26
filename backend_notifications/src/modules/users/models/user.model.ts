@@ -1,4 +1,4 @@
-import { UserStatus } from "./users-status.enum";
+import { UserStatus } from './users-status.enum';
 
 export interface UserModel {
   id: string;

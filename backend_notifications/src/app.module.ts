@@ -25,9 +25,8 @@ import { validateEnv } from '@app/config/config';
 
       inject: [ConfigService],
 
-      useFactory: async (configService: ConfigService) => {
-        const redisUrl =
-          configService.getOrThrow<string>('REDIS_URL');
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.getOrThrow<string>('REDIS_URL');
 
         return {
           ttl: 5000,

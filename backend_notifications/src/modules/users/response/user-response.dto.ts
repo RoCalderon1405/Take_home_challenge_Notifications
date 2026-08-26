@@ -1,4 +1,4 @@
-import { UserStatus } from "../models";
+import { UserStatus } from '../models';
 
 export interface UserResponseDto {
   id: string;

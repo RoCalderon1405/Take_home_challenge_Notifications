@@ -1,14 +1,5 @@
 import { UserModel } from '../models';
-import { UserStatus as PrismaUserStatus } from '@app/generated/prisma/client';
 import { UserResponseDto } from '../response';
-
-type PrismaUserData = {
-  id: string;
-  email: string;
-  status: PrismaUserStatus;
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 export class UserMapper {
   static toResponse(user: UserModel): UserResponseDto {
@@ -20,6 +11,4 @@ export class UserMapper {
       updatedAt: user.updatedAt,
     };
   }
-
-
 }

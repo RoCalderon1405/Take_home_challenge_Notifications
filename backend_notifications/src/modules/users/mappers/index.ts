@@ -1,2 +1,1 @@
-export { UserMapper } from "./userMapper";
-
+export { UserMapper } from './userMapper';

@@ -87,6 +87,10 @@ services:
           target: /app/src
 
         - action: sync+restart
+          path: ./backend_notifications/eslint.config.mjs
+          target: /app/eslint.config.mjs
+          
+        - action: sync+restart
           path: ./backend_notifications/tsconfig.json
           target: /app/tsconfig.json
 

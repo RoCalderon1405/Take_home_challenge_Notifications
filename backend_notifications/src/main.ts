@@ -32,4 +32,4 @@ async function bootstrap() {
     `🚀 Application is running on: http://localhost:${configService.getOrThrow<string>('PORT')}/api`,
   );
 }
-bootstrap();
+void bootstrap();

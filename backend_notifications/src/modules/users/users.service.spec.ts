@@ -103,9 +103,7 @@ describe('UsersService', () => {
     await service.create(createUserDto);
 
     // Assert
-    expect(passwordHasherMock.hash).toHaveBeenCalledWith(
-      'my-secure-password',
-    );
+    expect(passwordHasherMock.hash).toHaveBeenCalledWith('my-secure-password');
 
     expect(prismaMock.user.create).toHaveBeenCalledWith({
       data: {
@@ -179,22 +177,19 @@ describe('UsersService', () => {
     passwordHasherMock.hash.mockResolvedValue('hashed-password');
 
     prismaMock.user.create.mockRejectedValue(
-      new Prisma.PrismaClientKnownRequestError(
-        'Unique constraint failed',
-        {
-          code: 'P2002',
-          clientVersion: '7.9.0',
-          meta: {
-            target: ['email'],
-          },
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '7.9.0',
+        meta: {
+          target: ['email'],
         },
-      ),
+      }),
     );
 
     // Act + Assert
-    await expect(
-      service.create(createUserDto),
-    ).rejects.toThrow(ConflictException);
+    await expect(service.create(createUserDto)).rejects.toThrow(
+      ConflictException,
+    );
   });
 
   /**
@@ -248,13 +243,13 @@ describe('UsersService', () => {
     prismaMock.user.findUnique.mockResolvedValue(null);
 
     // Act + Assert
-    await expect(
-      service.findOneById('user-id'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findOneById('user-id')).rejects.toThrow(
+      NotFoundException,
+    );
 
-    await expect(
-      service.findOneById('user-id'),
-    ).rejects.toThrow('User with id: user-id not found');
+    await expect(service.findOneById('user-id')).rejects.toThrow(
+      'User with id: user-id not found',
+    );
   });
 
   /**
@@ -333,8 +328,7 @@ describe('UsersService', () => {
     });
 
     // Act
-    const result =
-      await service.findOneByEmailForAuth('test@gmail.com');
+    const result = await service.findOneByEmailForAuth('test@gmail.com');
 
     // Assert
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({

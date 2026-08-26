@@ -1,9 +1,9 @@
 export interface ConfigProps {
-    port:number,
-    api: ApiconfigProps
+  port: number;
+  api: ApiconfigProps;
 }
 
 interface ApiconfigProps {
-    apiUrl: string,
-    httpTimeout: number,
+  apiUrl: string;
+  httpTimeout: number;
 }
