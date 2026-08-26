@@ -59,33 +59,33 @@ jobs:
           command: npm run build
 
   coverage:
-  docker:
-    - image: cimg/node:24.18.1
+    docker:
+      - image: cimg/node:24.18.1
 
-  working_directory: ~/project/backend_notifications
+    working_directory: ~/project/backend_notifications
 
-  environment:
-    DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
 
-  steps:
-    - checkout:
-        path: ~/project
+    steps:
+      - checkout:
+          path: ~/project
 
-    - run:
-        name: Install dependencies
-        command: npm ci
+      - run:
+          name: Install dependencies
+          command: npm ci
 
-    - run:
-        name: Generate Prisma Client
-        command: npx prisma generate
+      - run:
+          name: Generate Prisma Client
+          command: npx prisma generate
 
-    - run:
-        name: Run tests with coverage
-        command: npm run test:cov
+      - run:
+          name: Run tests with coverage
+          command: npm run test:cov
 
-    - store_artifacts:
-        path: coverage
-        destination: coverage
+      - store_artifacts:
+          path: coverage
+          destination: coverage
 
 workflows:
   backend-ci:
