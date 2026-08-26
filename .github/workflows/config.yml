@@ -1,0 +1,60 @@
+version: 2.1
+
+jobs:
+  lint:
+    docker:
+      - image: cimg/node:24.18.1
+    working_directory: ~/project/backend_notifications
+    steps:
+      - checkout:
+          path: ~/project
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Generate Prisma Client
+          command: npx prisma generate
+      - run:
+          name: Run ESLint
+          command: npm run lint:check
+
+  unit-tests:
+    docker:
+      - image: cimg/node:24.18.1
+    working_directory: ~/project/backend_notifications
+    steps:
+      - checkout:
+          path: ~/project
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Generate Prisma Client
+          command: npx prisma generate
+      - run:
+          name: Run unit tests
+          command: npm run test:unit
+
+  build:
+    docker:
+      - image: cimg/node:24.18.1
+    working_directory: ~/project/backend_notifications
+    steps:
+      - checkout:
+          path: ~/project
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - run:
+          name: Generate Prisma Client
+          command: npx prisma generate
+      - run:
+          name: Build backend
+          command: npm run build
+
+workflows:
+  backend-ci:
+    jobs:
+      - lint
+      - unit-tests
+      - build
