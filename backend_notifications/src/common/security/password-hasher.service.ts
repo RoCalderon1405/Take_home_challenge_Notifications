@@ -20,9 +20,9 @@ export class PasswordHaserService {
   }
 
   async verify(password: string, hashedPassword: string): Promise<boolean> {
-    const result = await argon2.verify(hashedPassword, password);
+    const pepperedPassword = this.applyPepper(password);
 
-    return result;
+    return await argon2.verify(hashedPassword, pepperedPassword);
   }
 
   private applyPepper(password: string): string {
