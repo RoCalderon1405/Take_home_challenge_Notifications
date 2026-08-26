@@ -21,6 +21,8 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
+## Coveralls
+
 [![Coverage Status](https://coveralls.io/repos/github/RoCalderon1405/Take_home_challenge_Notifications/badge.svg?branch=main)](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main)
 
 ## Description
