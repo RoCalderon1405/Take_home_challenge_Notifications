@@ -44,7 +44,7 @@ jobs:
       - image: cimg/node:24.18.1
     working_directory: ~/project/backend_notifications
     environment:
-    DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
     steps:
       - checkout:
           path: ~/project
