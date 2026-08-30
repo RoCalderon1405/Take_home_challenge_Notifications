@@ -335,8 +335,15 @@ describe('UsersService', () => {
       where: {
         email: 'test@gmail.com',
       },
+      select: {
+        id: true,
+        email: true,
+        status: true,
+        passwordHash: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-
     expect(result).toEqual({
       id: 'user-id',
       email: 'test@gmail.com',

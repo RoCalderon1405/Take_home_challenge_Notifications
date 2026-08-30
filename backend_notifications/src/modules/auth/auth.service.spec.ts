@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
 
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
 
 import { UsersService } from '../users/users.service';
-import { UserStatus } from '../users/models';
+import { UserModel, UserStatus } from '../users/models';
 
 import { AuthService } from './auth.service';
 
@@ -18,6 +19,10 @@ describe('AuthService', () => {
     verify: jest.fn(),
   };
 
+  const jwtServiceMock = {
+    signAsync: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -30,6 +35,10 @@ describe('AuthService', () => {
           provide: PasswordHaserService,
           useValue: passwordHasherServiceMock,
         },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
+        },
       ],
     }).compile();
 
@@ -39,6 +48,7 @@ describe('AuthService', () => {
   });
 
   it('should validate correct credentials', async () => {
+    // Arrange
     const loginDto = {
       email: 'user@example.com',
       password: 'my-secure-password',
@@ -54,10 +64,13 @@ describe('AuthService', () => {
     };
 
     usersServiceMock.findOneByEmailForAuth.mockResolvedValue(user);
+
     passwordHasherServiceMock.verify.mockResolvedValue(true);
 
+    // Act
     const result = await service.validateCredentials(loginDto);
 
+    // Assert
     expect(result).toEqual({
       id: user.id,
       email: user.email,
@@ -65,9 +78,15 @@ describe('AuthService', () => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });
+
+    expect(passwordHasherServiceMock.verify).toHaveBeenCalledWith(
+      loginDto.password,
+      user.passwordHash,
+    );
   });
 
   it('should throw UnauthorizedException when user does not exist', async () => {
+    // Arrange
     const loginDto = {
       email: 'missing@example.com',
       password: 'my-secure-password',
@@ -75,6 +94,7 @@ describe('AuthService', () => {
 
     usersServiceMock.findOneByEmailForAuth.mockResolvedValue(null);
 
+    // Act + Assert
     await expect(service.validateCredentials(loginDto)).rejects.toThrow(
       'Invalid credentials',
     );
@@ -83,6 +103,7 @@ describe('AuthService', () => {
   });
 
   it('should throw UnauthorizedException when password is invalid', async () => {
+    // Arrange
     const loginDto = {
       email: 'user@example.com',
       password: 'wrong-password',
@@ -98,8 +119,10 @@ describe('AuthService', () => {
     };
 
     usersServiceMock.findOneByEmailForAuth.mockResolvedValue(user);
+
     passwordHasherServiceMock.verify.mockResolvedValue(false);
 
+    // Act + Assert
     await expect(service.validateCredentials(loginDto)).rejects.toThrow(
       'Invalid credentials',
     );
@@ -108,5 +131,32 @@ describe('AuthService', () => {
       loginDto.password,
       user.passwordHash,
     );
+  });
+
+  it('should generate an access token for an authenticated user', async () => {
+    // Arrange
+    const user: UserModel = {
+      id: 'user-id',
+      email: 'user@example.com',
+      status: UserStatus.ACTIVE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    jwtServiceMock.signAsync.mockResolvedValue('jwt-access-token');
+
+    // Act
+    const result = await service.login(user);
+
+    // Assert
+    expect(jwtServiceMock.signAsync).toHaveBeenCalledWith({
+      sub: user.id,
+      email: user.email,
+    });
+
+    expect(result).toEqual({
+      user,
+      accessToken: 'jwt-access-token',
+    });
   });
 });
