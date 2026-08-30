@@ -323,6 +323,7 @@ describe('UsersService', () => {
       email: 'test@gmail.com',
       passwordHash: 'hashed-password',
       status: 'ACTIVE',
+      role: 'USER',
       createdAt,
       updatedAt,
     });
