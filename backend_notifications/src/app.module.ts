@@ -11,6 +11,7 @@ import { PrismaModule } from '@app/modules/prisma/prisma.module';
 import { UsersModule } from '@app/modules/users/users.module';
 
 import { validateEnv } from '@app/config/config';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { validateEnv } from '@app/config/config';
 
     PrismaModule,
     UsersModule,
+    AuthModule,
   ],
 
   controllers: [AppController],
