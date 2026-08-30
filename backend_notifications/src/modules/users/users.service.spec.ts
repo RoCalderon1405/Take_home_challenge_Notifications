@@ -5,6 +5,7 @@ import { Prisma } from '@app/generated/prisma/client';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
+import { UserRole } from './models';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -95,6 +96,7 @@ describe('UsersService', () => {
       id: 'user-id',
       email: 'test@gmail.com',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -138,6 +140,7 @@ describe('UsersService', () => {
       id: 'user-id',
       email: 'test@gmail.com',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
@@ -150,6 +153,7 @@ describe('UsersService', () => {
       id: 'user-id',
       email: 'test@gmail.com',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
@@ -208,6 +212,7 @@ describe('UsersService', () => {
       id: 'user-id',
       email: 'test@gmail.com',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
@@ -229,6 +234,7 @@ describe('UsersService', () => {
       id: 'user-id',
       email: 'test@gmail.com',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
@@ -269,6 +275,7 @@ describe('UsersService', () => {
         id: 'user-1',
         email: 'user1@gmail.com',
         status: 'ACTIVE',
+        role: UserRole.USER,
         createdAt,
         updatedAt,
       },
@@ -276,6 +283,7 @@ describe('UsersService', () => {
         id: 'user-2',
         email: 'user2@gmail.com',
         status: 'INACTIVE',
+        role: UserRole.USER,
         createdAt,
         updatedAt,
       },
@@ -297,6 +305,7 @@ describe('UsersService', () => {
       id: 'user-1',
       email: 'user1@gmail.com',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
@@ -323,7 +332,7 @@ describe('UsersService', () => {
       email: 'test@gmail.com',
       passwordHash: 'hashed-password',
       status: 'ACTIVE',
-      role: 'USER',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
@@ -340,6 +349,7 @@ describe('UsersService', () => {
         id: true,
         email: true,
         status: true,
+        role: true,
         passwordHash: true,
         createdAt: true,
         updatedAt: true,
@@ -350,6 +360,7 @@ describe('UsersService', () => {
       email: 'test@gmail.com',
       passwordHash: 'hashed-password',
       status: 'ACTIVE',
+      role: UserRole.USER,
       createdAt,
       updatedAt,
     });
