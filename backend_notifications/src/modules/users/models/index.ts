@@ -1,2 +1,3 @@
 export { UserStatus } from './users-status.enum';
-export type * from './user.model';
+export { UserRole } from './users-role.enum';
+export type { UserModel, UserAuthModel } from './user.model';

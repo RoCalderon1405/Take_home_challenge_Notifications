@@ -63,6 +63,9 @@ services:
 
     command: sh -c "npx prisma generate && npm run start"
 
+    volumes:
+      - ./backend_notifications/prisma:/app/prisma
+
     depends_on:
       db:
         condition: service_healthy
@@ -101,10 +104,6 @@ services:
         - action: sync+restart
           path: ./backend_notifications/prisma.config.ts
           target: /app/prisma.config.ts
-
-        - action: sync+restart
-          path: ./backend_notifications/prisma/schema.prisma
-          target: /app/prisma/schema.prisma
 
         - action: rebuild
           path: ./backend_notifications/package.json

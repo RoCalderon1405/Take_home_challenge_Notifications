@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
 
 import { UsersService } from '../users/users.service';
-import { UserModel, UserStatus } from '../users/models';
+import { UserModel, UserRole, UserStatus } from '../users/models';
 
 import { AuthService } from './auth.service';
 
@@ -139,6 +139,7 @@ describe('AuthService', () => {
       id: 'user-id',
       email: 'user@example.com',
       status: UserStatus.ACTIVE,
+      role: UserRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

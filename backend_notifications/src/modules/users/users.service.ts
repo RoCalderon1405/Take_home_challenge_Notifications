@@ -136,6 +136,7 @@ export class UsersService {
         id: true,
         email: true,
         status: true,
+        role: true,
         passwordHash: true,
         createdAt: true,
         updatedAt: true,
