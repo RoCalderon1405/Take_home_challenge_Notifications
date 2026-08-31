@@ -1,13 +1,20 @@
 import { Module } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { UsersController } from './users.controller';
+
+import { AuthorizationModule } from '@app/common/authorization/authorization.module';
 import { SecurityModule } from '@app/common/security/security.module';
+
 import { PrismaModule } from '../prisma/prisma.module';
 
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+
+/**
+ * Provides user management capabilities and their authorization dependencies.
+ */
 @Module({
+  imports: [PrismaModule, SecurityModule, AuthorizationModule],
   controllers: [UsersController],
   providers: [UsersService],
-  imports: [PrismaModule, SecurityModule],
   exports: [UsersService],
 })
 export class UsersModule {}

@@ -1,5 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+/**
+ * UsersController unit tests do not test Passport authentication.
+ * Mocking the authentication guard keeps this suite isolated from
+ * Passport's runtime implementation and module format.
+ */
+jest.mock('../auth/guards', () => ({
+  JwtAuthGuard: class JwtAuthGuard {},
+}));
+
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
