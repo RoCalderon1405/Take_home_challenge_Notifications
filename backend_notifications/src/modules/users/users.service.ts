@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
 
@@ -13,6 +12,7 @@ import { UserMapper } from './mappers/userMapper';
 import { UserAuthModel, UserModel } from './models';
 import { CreateUserDto } from './request/create-user.dto';
 import { UserResponseDto } from './response';
+import { PrismaErrorCode, PrismaErrorHandler } from '@app/common/database';
 
 /**
  * Provides user-related application operations.
@@ -58,14 +58,10 @@ export class UsersService {
 
       return UserMapper.toResponse(userCreated);
     } catch (error: unknown) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(`User with email: ${email} already exists`);
-      }
-
-      throw error;
+      PrismaErrorHandler.handle(error, {
+        [PrismaErrorCode.UNIQUE_CONSTRAINT]: () =>
+          new ConflictException(`User with email: ${email} already exists`),
+      });
     }
   }
 
@@ -112,7 +108,7 @@ export class UsersService {
       throw new NotFoundException(`User with id: ${id} not found`);
     }
 
-    return user;
+    return UserMapper.toModel(user);
   }
 
   /**
@@ -151,12 +147,23 @@ export class UsersService {
   }
 
   /**
-   * Temporary scaffold for user deletion.
+   * Deletes a user by its unique identifier.
    *
-   * TODO: Replace this implementation with the real persistence operation
-   * before exposing user deletion as a completed feature.
+   * @param id User UUID.
+   * @throws NotFoundException When the user does not exist.
    */
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: string): Promise<void> {
+    try {
+      await this._prismaService.user.delete({
+        where: {
+          id,
+        },
+      });
+    } catch (error: unknown) {
+      PrismaErrorHandler.handle(error, {
+        [PrismaErrorCode.RECORD_NOT_FOUND]: () =>
+          new NotFoundException(`User with id: ${id} not found`),
+      });
+    }
   }
 }

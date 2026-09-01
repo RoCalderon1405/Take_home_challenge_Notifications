@@ -1,8 +1,8 @@
-import { UserAuthModel, UserModel } from '../models';
+import { UserModel } from '../models';
 import { UserResponseDto } from '../response';
 
 export class UserMapper {
-  static toModel(user: UserAuthModel): UserModel {
+  static toModel(user: UserModel): UserModel {
     return {
       id: user.id,
       email: user.email,

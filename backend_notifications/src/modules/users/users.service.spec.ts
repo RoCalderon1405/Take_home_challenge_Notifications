@@ -22,6 +22,7 @@ describe('UsersService', () => {
       create: jest.fn(),
       findMany: jest.fn(),
       findUnique: jest.fn(),
+      delete: jest.fn(),
     },
   };
 
@@ -364,5 +365,49 @@ describe('UsersService', () => {
       createdAt,
       updatedAt,
     });
+  });
+
+  /**
+   * Verifies that a user is deleted using its UUID.
+   */
+  it('should delete a user by id', async () => {
+    // Arrange
+    prismaMock.user.delete.mockResolvedValue({
+      id: 'user-id',
+    });
+
+    // Act
+    await service.remove('user-id');
+
+    // Assert
+    expect(prismaMock.user.delete).toHaveBeenCalledWith({
+      where: {
+        id: 'user-id',
+      },
+    });
+  });
+
+  /**
+   * Verifies that Prisma P2025 is translated into a domain-friendly
+   * NotFoundException when attempting to delete a missing user.
+   */
+  it('should throw NotFoundException when deleting a user that does not exist', async () => {
+    // Arrange
+    prismaMock.user.delete.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError(
+        'Record to delete does not exist',
+        {
+          code: 'P2025',
+          clientVersion: '7.9.0',
+        },
+      ),
+    );
+
+    // Act + Assert
+    await expect(service.remove('user-id')).rejects.toThrow(NotFoundException);
+
+    await expect(service.remove('user-id')).rejects.toThrow(
+      'User with id: user-id not found',
+    );
   });
 });
