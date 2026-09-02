@@ -12,6 +12,7 @@ import { UsersModule } from '@app/modules/users/users.module';
 
 import { validateEnv } from '@app/config/config';
 import { AuthModule } from './modules/auth/auth.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuthModule } from './modules/auth/auth.module';
     PrismaModule,
     UsersModule,
     AuthModule,
+    NotificationsModule,
   ],
 
   controllers: [AppController],
