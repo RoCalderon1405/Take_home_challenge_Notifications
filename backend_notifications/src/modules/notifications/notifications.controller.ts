@@ -16,9 +16,17 @@ import { CurrentUser } from '../auth/decorators';
 import { JwtAuthGuard } from '../auth/guards';
 import type { UserModel } from '../users/models';
 
+import {
+  ApiCreateNotification,
+  ApiDeleteNotification,
+  ApiGetNotification,
+  ApiGetNotifications,
+  ApiNotificationsController,
+  ApiUpdateNotification,
+} from './docs/notification-swagger.decorators';
+import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, UpdateNotificationDto } from './request';
 import { NotificationResponseDto } from './response';
-import { NotificationsService } from './notifications.service';
 
 /**
  * Handles authenticated HTTP operations for notifications.
@@ -27,6 +35,7 @@ import { NotificationsService } from './notifications.service';
  * user provided by Passport. Clients cannot assign notifications to
  * arbitrary users.
  */
+@ApiNotificationsController()
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
@@ -35,17 +44,16 @@ export class NotificationsController {
   /**
    * Creates a notification owned by the authenticated user.
    *
-   * The authenticated user's identifier is obtained from request.user
-   * instead of accepting userId from client input.
-   *
    * @param user Authenticated application user.
    * @param createNotificationDto Notification data supplied by the client.
    * @returns The newly created notification.
    */
   @Post()
+  @ApiCreateNotification()
   create(
     @CurrentUser() user: UserModel,
-    @Body() createNotificationDto: CreateNotificationDto,
+    @Body()
+    createNotificationDto: CreateNotificationDto,
   ): Promise<NotificationResponseDto> {
     return this._notificationsService.create(user.id, createNotificationDto);
   }
@@ -53,13 +61,11 @@ export class NotificationsController {
   /**
    * Retrieves all notifications owned by the authenticated user.
    *
-   * Ownership is derived from the authenticated Passport user and enforced
-   * again at the persistence query level inside NotificationsService.
-   *
    * @param user Authenticated application user.
    * @returns Notifications owned by the authenticated user.
    */
   @Get()
+  @ApiGetNotifications()
   findAll(@CurrentUser() user: UserModel): Promise<NotificationResponseDto[]> {
     return this._notificationsService.findAllByUser(user.id);
   }
@@ -67,18 +73,16 @@ export class NotificationsController {
   /**
    * Retrieves one notification owned by the authenticated user.
    *
-   * The notification identifier is validated as a UUID before reaching
-   * the service. Ownership is enforced by matching both notification ID
-   * and authenticated user ID in the persistence query.
-   *
    * @param user Authenticated application user.
    * @param id UUID of the notification to retrieve.
    * @returns The matching notification.
    */
   @Get(':id')
+  @ApiGetNotification()
   findOne(
     @CurrentUser() user: UserModel,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id', new ParseUUIDPipe())
+    id: string,
   ): Promise<NotificationResponseDto> {
     return this._notificationsService.findOneByIdForUser(user.id, id);
   }
@@ -86,19 +90,19 @@ export class NotificationsController {
   /**
    * Updates a notification owned by the authenticated user.
    *
-   * Only fields allowed by UpdateNotificationDto can be modified.
-   * Ownership is enforced using the authenticated user's identifier.
-   *
    * @param user Authenticated application user.
    * @param id UUID of the notification to update.
    * @param updateNotificationDto Editable notification fields.
    * @returns The updated notification.
    */
   @Patch(':id')
+  @ApiUpdateNotification()
   update(
     @CurrentUser() user: UserModel,
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() updateNotificationDto: UpdateNotificationDto,
+    @Param('id', new ParseUUIDPipe())
+    id: string,
+    @Body()
+    updateNotificationDto: UpdateNotificationDto,
   ): Promise<NotificationResponseDto> {
     return this._notificationsService.update(
       user.id,
@@ -110,19 +114,16 @@ export class NotificationsController {
   /**
    * Deletes a notification owned by the authenticated user.
    *
-   * Ownership is derived from the authenticated user and enforced again
-   * in the persistence query.
-   *
-   * A successful deletion returns HTTP 204 with no response body.
-   *
    * @param user Authenticated application user.
    * @param id UUID of the notification to delete.
    */
-  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiDeleteNotification()
   async remove(
     @CurrentUser() user: UserModel,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id', new ParseUUIDPipe())
+    id: string,
   ): Promise<void> {
     await this._notificationsService.remove(user.id, id);
   }

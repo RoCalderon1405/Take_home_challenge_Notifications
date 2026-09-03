@@ -1,11 +1,11 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 
 import { CreateNotificationDto } from './create-notification.dto';
 
 /**
- * Data allowed when updating a notification.
+ * Defines the fields that can be partially updated on a notification.
  *
- * All editable notification fields are optional, while ownership and
- * delivery state remain controlled exclusively by the backend.
+ * Every property inherited from CreateNotificationDto becomes optional
+ * while preserving its validation and OpenAPI metadata.
  */
 export class UpdateNotificationDto extends PartialType(CreateNotificationDto) {}

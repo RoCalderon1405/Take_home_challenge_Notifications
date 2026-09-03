@@ -1,21 +1,29 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 
-async function bootstrap() {
+import { AppModule } from './app.module';
+import { setupSwagger } from './config/swagger.config';
+
+/**
+ * Bootstraps and configures the Notifications API.
+ */
+async function bootstrap(): Promise<void> {
   const logger = new Logger('Notifications - App');
 
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
 
+  const port = Number(configService.getOrThrow<string>('PORT'));
+
+  const allowedOrigins = configService.getOrThrow<string>('ALLOWED_ORIGINS');
+
   app.setGlobalPrefix('api');
 
   app.enableCors({
-    origin: configService.getOrThrow<string>('ALLOWED_ORIGINS'),
+    origin: allowedOrigins,
     credentials: true,
-    // methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
@@ -27,9 +35,13 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(Number(configService.getOrThrow<string>('PORT')), '0.0.0.0');
-  logger.log(
-    `🚀 Application is running on: http://localhost:${configService.getOrThrow<string>('PORT')}/api`,
-  );
+  setupSwagger(app);
+
+  await app.listen(port, '0.0.0.0');
+
+  logger.log(`🚀 Application is running on: http://localhost:${port}/api`);
+
+  logger.log(`📚 Swagger is running on: http://localhost:${port}/api/docs`);
 }
+
 void bootstrap();
