@@ -27,6 +27,8 @@ import {
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, UpdateNotificationDto } from './request';
 import { NotificationResponseDto } from './response';
+import { NotificationDeliveryService } from './notification-delivery.service';
+import { NotificationSendResult } from './senders/contracts';
 
 /**
  * Handles authenticated HTTP operations for notifications.
@@ -39,7 +41,10 @@ import { NotificationResponseDto } from './response';
 @UseGuards(JwtAuthGuard)
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly _notificationsService: NotificationsService) {}
+  constructor(
+    private readonly _notificationsService: NotificationsService,
+    private readonly _notificationDeliveryService: NotificationDeliveryService,
+  ) {}
 
   /**
    * Creates a notification owned by the authenticated user.
@@ -109,6 +114,23 @@ export class NotificationsController {
       id,
       updateNotificationDto,
     );
+  }
+
+  /**
+   * Sends a notification owned by the authenticated user.
+   *
+   * @param user Authenticated application user.
+   * @param id UUID of the notification to send.
+   * @returns Normalized delivery result.
+   */
+  @Post(':id/send')
+  @HttpCode(HttpStatus.OK)
+  send(
+    @CurrentUser() user: UserModel,
+    @Param('id', new ParseUUIDPipe())
+    id: string,
+  ): Promise<NotificationSendResult> {
+    return this._notificationDeliveryService.send(user.id, id);
   }
 
   /**
