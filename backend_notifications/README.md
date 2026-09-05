@@ -1,65 +1,65 @@
 # Backend — Notifications API
 
-API NestJS para mensajería: autenticación, usuarios y notificaciones **aisladas por propietario**. El envío se procesa de forma asíncrona con BullMQ.
+NestJS messaging API: authentication, users, and **owner-scoped** notifications. Delivery runs asynchronously with BullMQ.
 
-Este servicio **no está cerrado**: los canales EMAIL / SMS / PUSH simulan un proveedor. Falta pulir cola (reintentos, Swagger del send) y no hay cliente de producción.
+This service is **not complete**: EMAIL / SMS / PUSH channels simulate a provider. Queue hardening (retries, Swagger for send) and a production client are still missing.
 
-Prefijo global: `/api`. Swagger: `/api/docs`.
+Global prefix: `/api`. Swagger: `/api/docs`.
 
 ## Stack
 
 - NestJS 11, TypeScript
 - Prisma 7 + PostgreSQL
-- Redis: caché (`@nestjs/cache-manager`) y colas (`@nestjs/bullmq`)
+- Redis: cache (`@nestjs/cache-manager`) and queues (`@nestjs/bullmq`)
 - Auth: Passport Local + JWT, Argon2, roles `USER` / `ADMIN`
-- Validación: `class-validator` + `ValidationPipe`
-- Documentación: Swagger
-- Tests: Jest (unitarios en `*.spec.ts`)
+- Validation: `class-validator` + `ValidationPipe`
+- Docs: Swagger
+- Tests: Jest (`*.spec.ts`)
 
-## Módulos
+## Modules
 
-| Módulo | Responsabilidad |
+| Module | Responsibility |
 | --- | --- |
 | `auth` | Login, JWT, `/auth/me` |
-| `users` | Registro público; listado/borrado solo `ADMIN` |
-| `notifications` | CRUD propio + `POST :id/send` |
-| `notifications/queue` | Producer HTTP → job; Processor → `NotificationDeliveryService` |
-| `notifications/senders` | Strategy por canal (`EMAIL`, `SMS`, `PUSH`) |
+| `users` | Public registration; list/delete is `ADMIN` only |
+| `notifications` | Owner CRUD + `POST :id/send` |
+| `notifications/queue` | HTTP producer → job; processor → `NotificationDeliveryService` |
+| `notifications/senders` | Per-channel strategy (`EMAIL`, `SMS`, `PUSH`) |
 | `common/authorization` | `RolesGuard` |
-| `common/security` | Hash de contraseñas |
+| `common/security` | Password hashing |
 
-Ownership: el controlador inyecta el usuario de Passport; el servicio filtra siempre por `userId` en Prisma.
+Ownership: the controller injects the Passport user; the service always filters by `userId` in Prisma.
 
-## Requisitos
+## Requirements
 
 - Node.js 24
-- Variables en el `.env` de la **raíz del repo** (`../.env` respecto a este directorio)
-- PostgreSQL y Redis (vía `docker compose` en la raíz)
+- Env vars in the **repo root** `.env` (`../.env` from this directory)
+- PostgreSQL and Redis (via root `docker compose`)
 
-## Variables de entorno
+## Environment variables
 
-| Variable | Uso |
+| Variable | Purpose |
 | --- | --- |
-| `PORT` | Puerto HTTP |
-| `ALLOWED_ORIGINS` | Orígenes CORS (lista separada por comas) |
-| `DATABASE_URL` | Conexión PostgreSQL |
-| `REDIS_URL` | Redis (caché y BullMQ) |
-| `PASSWORD_PEPPER` | Pepper de hashing (≥ 32 caracteres) |
-| `JWT_SECRET` | Firma JWT (≥ 32 caracteres) |
-| `JWT_EXPIRES_IN_SECONDS` | TTL del access token |
+| `PORT` | HTTP port |
+| `ALLOWED_ORIGINS` | CORS origins (comma-separated) |
+| `DATABASE_URL` | PostgreSQL connection |
+| `REDIS_URL` | Redis (cache and BullMQ) |
+| `PASSWORD_PEPPER` | Hashing pepper (≥ 32 characters) |
+| `JWT_SECRET` | JWT signing secret (≥ 32 characters) |
+| `JWT_EXPIRES_IN_SECONDS` | Access-token TTL |
 
-Plantilla: [../.env.example](../.env.example).
+Template: [../.env.example](../.env.example).
 
-## Setup local (sin Docker del API)
+## Local setup (API not in Docker)
 
-Desde la raíz:
+From the repo root:
 
 ```bash
 cp .env.example .env
 docker compose up db redis -d
 ```
 
-En este directorio:
+In this directory:
 
 ```bash
 npm ci
@@ -81,86 +81,86 @@ npm run test:cov
 npm run test:e2e
 ```
 
-Prisma usa `prisma.config.ts` (schema en `prisma/`, seed `prisma/seed.ts`).
+Prisma uses `prisma.config.ts` (schema in `prisma/`, seed `prisma/seed.ts`).
 
 ## Endpoints
 
-Autenticación Bearer (`Authorization: Bearer <token>`) salvo registro y login.
+Bearer auth (`Authorization: Bearer <token>`) except registration and login.
 
-### Auth y usuarios
+### Auth and users
 
-| Método | Ruta | Auth | Descripción |
+| Method | Path | Auth | Description |
 | --- | --- | --- | --- |
-| `POST` | `/api/users` | Pública | Registro |
+| `POST` | `/api/users` | Public | Register |
 | `POST` | `/api/auth/login` | Local (email/password) | Access token |
-| `GET` | `/api/auth/me` | JWT | Usuario actual |
-| `GET` | `/api/users` | JWT + ADMIN | Listar usuarios |
-| `GET` | `/api/users/:id` | JWT + ADMIN | Obtener usuario |
-| `DELETE` | `/api/users/:id` | JWT + ADMIN | Borrar usuario |
+| `GET` | `/api/auth/me` | JWT | Current user |
+| `GET` | `/api/users` | JWT + ADMIN | List users |
+| `GET` | `/api/users/:id` | JWT + ADMIN | Get user |
+| `DELETE` | `/api/users/:id` | JWT + ADMIN | Delete user |
 
-Login (body): `{ "email": "user@example.com", "password": "..." }`.
+Login body: `{ "email": "user@example.com", "password": "..." }`.
 
-### Notificaciones (siempre del usuario del token)
+### Notifications (always scoped to the token user)
 
-| Método | Ruta | Descripción |
+| Method | Path | Description |
 | --- | --- | --- |
-| `POST` | `/api/notifications` | Crea mensaje `PENDING` |
-| `GET` | `/api/notifications` | Lista propias (más recientes primero) |
-| `GET` | `/api/notifications/:id` | Detalle propio |
-| `PATCH` | `/api/notifications/:id` | Actualiza campos permitidos |
-| `POST` | `/api/notifications/:id/send` | Encola envío (`202`, `{ status, jobId }`) |
-| `DELETE` | `/api/notifications/:id` | Elimina propia |
+| `POST` | `/api/notifications` | Create a `PENDING` message |
+| `GET` | `/api/notifications` | List owned (newest first) |
+| `GET` | `/api/notifications/:id` | Owned detail |
+| `PATCH` | `/api/notifications/:id` | Update allowed fields |
+| `POST` | `/api/notifications/:id/send` | Enqueue send (`202`, `{ status, jobId }`) |
+| `DELETE` | `/api/notifications/:id` | Delete owned |
 
-Crear:
+Create:
 
 ```json
 {
   "channel": "EMAIL",
-  "title": "Bienvenida",
-  "content": "Hola",
-  "recipient": "destino@example.com"
+  "title": "Welcome",
+  "content": "Hello",
+  "recipient": "destination@example.com"
 }
 ```
 
-`channel`: `EMAIL` | `SMS` | `PUSH`. El cliente no envía `userId`, `status` ni IDs internos de canal.
+`channel`: `EMAIL` | `SMS` | `PUSH`. Clients do not send `userId`, `status`, or internal channel IDs.
 
-Si el id no existe o es de otro usuario: `404` (sin filtrar existencia ajena).
+If the id is missing or belongs to another user: `404` (no existence leak).
 
-## Modelo de datos (resumen)
+## Data model (summary)
 
-- `User` — email único, `passwordHash`, `status`, `role`.
-- `Notification` — título, contenido, destinatario, canal, `status` (`PENDING` / `PROCESSING` / `SENT` / `FAILED`), `sentAt`, `lastError`.
-- `NotificationChannel` — catálogo (`EMAIL`, `SMS`, `PUSH`).
-- `NotificationDelivery` — intento de envío (payload, proveedor, error).
+- `User` — unique email, `passwordHash`, `status`, `role`.
+- `Notification` — title, content, recipient, channel, `status` (`PENDING` / `PROCESSING` / `SENT` / `FAILED`), `sentAt`, `lastError`.
+- `NotificationChannel` — catalog (`EMAIL`, `SMS`, `PUSH`).
+- `NotificationDelivery` — send attempt (payload, provider, error).
 
-Índices por `userId`, estado y `userId + createdAt`.
+Indexes on `userId`, status, and `userId + createdAt`.
 
-## Entrega asíncrona
+## Asynchronous delivery
 
-1. `POST :id/send` añade un job `send-notification` a la cola `notifications`.
-2. El processor llama a `NotificationDeliveryService.send(userId, notificationId)`.
-3. Se crea un registro de delivery `PROCESSING`, se llama a la strategy del canal y se persiste `SENT` o `FAILED` en transacción.
+1. `POST :id/send` adds a `send-notification` job to the `notifications` queue.
+2. The processor calls `NotificationDeliveryService.send(userId, notificationId)`.
+3. A `PROCESSING` delivery row is created, the channel strategy runs, and `SENT` or `FAILED` is persisted in a transaction.
 
-Los senders actuales son stubs de desarrollo (`development-email`, etc.). Sustituir la strategy no debe cambiar el orquestador.
+Current senders are development stubs (`development-email`, etc.). Replacing a strategy should not change the orchestrator.
 
 ## Docker
 
-El `docker-compose` de la raíz construye este servicio, espera Postgres y Redis sanos, y monta `prisma/` para generar cliente. Healthcheck HTTP: revisar que apunte a una ruta pública cuando se endurezca el compose.
+Root `docker-compose` builds this service, waits for healthy Postgres and Redis, and mounts `prisma/` for client generation. HTTP healthcheck: point it at a public route when hardening compose.
 
 ## Tests
 
-Los tests de controlador mockean `NotificationQueueProducer` para no cargar BullMQ/ESM ni Redis.
+Controller tests mock `NotificationQueueProducer` so Jest does not load BullMQ/ESM or Redis.
 
 ```bash
 npm run test:unit
 ```
 
-CI (CircleCI) corre lint, unit tests, build y cobertura sobre este paquete.
+CI (CircleCI) runs lint, unit tests, build, and coverage for this package.
 
-## Deuda conocida (backend)
+## Known gaps (backend)
 
-- Sin decorator Swagger en `POST :id/send`.
-- Encolar no valida ownership antes del job (el worker sí; jobs inválidos fallan en el worker).
-- Sin política explícita de retries/backoff en BullMQ.
-- Senders no hablan con un proveedor real.
-- Listados sin paginación.
+- No Swagger decorator on `POST :id/send`.
+- Enqueue does not check ownership before the job (the worker does; invalid jobs fail there).
+- No explicit BullMQ retry/backoff policy.
+- Senders do not call a real provider.
+- Lists are not paginated.
