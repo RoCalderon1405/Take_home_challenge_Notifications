@@ -1,6 +1,9 @@
 import { NotificationChannelCode, NotificationStatus } from './models';
+
 import { NotificationsService } from './notifications.service';
-import { UserModel } from '../users/models';
+
+import type { NotificationQueueProducer } from './queue/notification-queue.producer';
+import type { UserModel } from '../users/models';
 
 /**
  * JwtAuthGuard is replaced because controller unit tests invoke the controller
@@ -8,6 +11,17 @@ import { UserModel } from '../users/models';
  */
 jest.mock('../auth/guards', () => ({
   JwtAuthGuard: class JwtAuthGuard {},
+}));
+
+/**
+ * NotificationQueueProducer is replaced because controller unit tests do not
+ * require BullMQ or a Redis connection.
+ *
+ * This also prevents Jest from loading BullMQ's ESM implementation during
+ * the isolated controller test.
+ */
+jest.mock('./queue/notification-queue.producer', () => ({
+  NotificationQueueProducer: class NotificationQueueProducer {},
 }));
 
 import { NotificationsController } from './notifications.controller';
@@ -21,6 +35,10 @@ describe('NotificationsController', () => {
     findOneByIdForUser: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+  };
+
+  const notificationQueueProducerMock = {
+    enqueueSend: jest.fn(),
   };
 
   const user = {
@@ -46,6 +64,7 @@ describe('NotificationsController', () => {
 
     controller = new NotificationsController(
       notificationsServiceMock as unknown as NotificationsService,
+      notificationQueueProducerMock as unknown as NotificationQueueProducer,
     );
   });
 
@@ -128,6 +147,24 @@ describe('NotificationsController', () => {
       );
 
       expect(result.title).toBe('Updated notification');
+    });
+  });
+
+  describe('send', () => {
+    it('should queue an owned notification for asynchronous delivery', async () => {
+      notificationQueueProducerMock.enqueueSend.mockResolvedValue('3');
+
+      const result = await controller.send(user, notificationResponse.id);
+
+      expect(notificationQueueProducerMock.enqueueSend).toHaveBeenCalledWith(
+        user.id,
+        notificationResponse.id,
+      );
+
+      expect(result).toEqual({
+        status: 'QUEUED',
+        jobId: '3',
+      });
     });
   });
 

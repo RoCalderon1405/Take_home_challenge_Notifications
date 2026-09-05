@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 
 import { PrismaModule } from '../prisma/prisma.module';
 
@@ -7,14 +8,22 @@ import { NotificationsService } from './notifications.service';
 
 import type { NotificationSenderStrategy } from './senders/contracts';
 
-import { NotificationDispatcherService } from './senders/notification-dispatcher.service';
-import { NOTIFICATION_SENDER_STRATEGIES } from './senders/notification-sender.constants';
-import { NotificationSenderRegistry } from './senders/notification-sender.registry';
+import {
+  NotificationDispatcherService,
+  NOTIFICATION_SENDER_STRATEGIES,
+  NotificationSenderRegistry,
+} from './senders';
 
-import { EmailSenderStrategy } from './senders/strategies/email-sender.strategy';
-import { PushSenderStrategy } from './senders/strategies/push-sender.strategy';
-import { SmsSenderStrategy } from './senders/strategies/sms-sender.strategy';
+import {
+  EmailSenderStrategy,
+  PushSenderStrategy,
+  SmsSenderStrategy,
+} from './senders/strategies';
+
 import { NotificationDeliveryService } from './notification-delivery.service';
+import { NotificationQueueProducer } from './queue/notification-queue.producer';
+import { NOTIFICATION_QUEUE } from './queue/notification-queue.constants';
+import { NotificationQueueProcessor } from './queue/notification-queue.processor';
 
 /**
  * Provides notification management and delivery capabilities.
@@ -23,13 +32,19 @@ import { NotificationDeliveryService } from './notification-delivery.service';
  * dependency injection token and resolved by NotificationSenderRegistry.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    BullModule.registerQueue({ name: NOTIFICATION_QUEUE }),
+  ],
 
   controllers: [NotificationsController],
 
   providers: [
     NotificationsService,
     NotificationDeliveryService,
+
+    NotificationQueueProcessor,
+    NotificationQueueProducer,
 
     EmailSenderStrategy,
     SmsSenderStrategy,

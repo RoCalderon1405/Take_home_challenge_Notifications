@@ -1,18 +1,21 @@
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
+import { BullModule } from '@nestjs/bullmq';
+import KeyvRedis from '@keyv/redis';
+
 import { resolve } from 'node:path';
 
-import KeyvRedis from '@keyv/redis';
-import { CacheModule } from '@nestjs/cache-manager';
-
-import { AppService } from '@app/app.service';
 import { AppController } from '@app/app.controller';
-import { PrismaModule } from '@app/modules/prisma/prisma.module';
-import { UsersModule } from '@app/modules/users/users.module';
+import { AppService } from '@app/app.service';
 
 import { validateEnv } from '@app/config/config';
-import { AuthModule } from './modules/auth/auth.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+
+import { AuthModule } from '@app/modules/auth/auth.module';
+import { NotificationsModule } from '@app/modules/notifications/notifications.module';
+import { PrismaModule } from '@app/modules/prisma/prisma.module';
+import { UsersModule } from '@app/modules/users/users.module';
 
 @Module({
   imports: [
@@ -37,6 +40,21 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
       },
     }),
 
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = new URL(configService.getOrThrow<string>('REDIS_URL'));
+
+        return {
+          connection: {
+            host: redisUrl.hostname,
+            port: Number(redisUrl.port || 6379),
+          },
+        };
+      },
+    }),
+
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -44,6 +62,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
   ],
 
   controllers: [AppController],
+
   providers: [AppService],
 })
 export class AppModule {}

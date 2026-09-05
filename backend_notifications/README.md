@@ -1,102 +1,166 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend — Notifications API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API NestJS para mensajería: autenticación, usuarios y notificaciones **aisladas por propietario**. El envío se procesa de forma asíncrona con BullMQ.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Este servicio **no está cerrado**: los canales EMAIL / SMS / PUSH simulan un proveedor. Falta pulir cola (reintentos, Swagger del send) y no hay cliente de producción.
 
-## Coveralls
+Prefijo global: `/api`. Swagger: `/api/docs`.
 
-[![Coverage Status](https://coveralls.io/repos/github/RoCalderon1405/Take_home_challenge_Notifications/badge.svg?branch=main)](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main)
+## Stack
 
-## Description
+- NestJS 11, TypeScript
+- Prisma 7 + PostgreSQL
+- Redis: caché (`@nestjs/cache-manager`) y colas (`@nestjs/bullmq`)
+- Auth: Passport Local + JWT, Argon2, roles `USER` / `ADMIN`
+- Validación: `class-validator` + `ValidationPipe`
+- Documentación: Swagger
+- Tests: Jest (unitarios en `*.spec.ts`)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Módulos
 
-## Project setup
+| Módulo | Responsabilidad |
+| --- | --- |
+| `auth` | Login, JWT, `/auth/me` |
+| `users` | Registro público; listado/borrado solo `ADMIN` |
+| `notifications` | CRUD propio + `POST :id/send` |
+| `notifications/queue` | Producer HTTP → job; Processor → `NotificationDeliveryService` |
+| `notifications/senders` | Strategy por canal (`EMAIL`, `SMS`, `PUSH`) |
+| `common/authorization` | `RolesGuard` |
+| `common/security` | Hash de contraseñas |
 
-```bash
-$ pnpm install
-```
+Ownership: el controlador inyecta el usuario de Passport; el servicio filtra siempre por `userId` en Prisma.
 
-## Compile and run the project
+## Requisitos
 
-```bash
-# development
-$ pnpm run start
+- Node.js 24
+- Variables en el `.env` de la **raíz del repo** (`../.env` respecto a este directorio)
+- PostgreSQL y Redis (vía `docker compose` en la raíz)
 
-# watch mode
-$ pnpm run start:dev
+## Variables de entorno
 
-# production mode
-$ pnpm run start:prod
-```
+| Variable | Uso |
+| --- | --- |
+| `PORT` | Puerto HTTP |
+| `ALLOWED_ORIGINS` | Orígenes CORS (lista separada por comas) |
+| `DATABASE_URL` | Conexión PostgreSQL |
+| `REDIS_URL` | Redis (caché y BullMQ) |
+| `PASSWORD_PEPPER` | Pepper de hashing (≥ 32 caracteres) |
+| `JWT_SECRET` | Firma JWT (≥ 32 caracteres) |
+| `JWT_EXPIRES_IN_SECONDS` | TTL del access token |
 
-## Run tests
+Plantilla: [../.env.example](../.env.example).
 
-```bash
-# unit tests
-$ pnpm run test
+## Setup local (sin Docker del API)
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Desde la raíz:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+cp .env.example .env
+docker compose up db redis -d
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+En este directorio:
 
-## Resources
+```bash
+npm ci
+npx prisma generate
+npx prisma migrate dev
+npx prisma db seed
+npm run start:dev
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## Scripts
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+npm run start:dev    # watch
+npm run build
+npm run start:prod
+npm run lint:check
+npm run test:unit
+npm run test:cov
+npm run test:e2e
+```
 
-## Support
+Prisma usa `prisma.config.ts` (schema en `prisma/`, seed `prisma/seed.ts`).
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Endpoints
 
-## Stay in touch
+Autenticación Bearer (`Authorization: Bearer <token>`) salvo registro y login.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Auth y usuarios
 
-## License
+| Método | Ruta | Auth | Descripción |
+| --- | --- | --- | --- |
+| `POST` | `/api/users` | Pública | Registro |
+| `POST` | `/api/auth/login` | Local (email/password) | Access token |
+| `GET` | `/api/auth/me` | JWT | Usuario actual |
+| `GET` | `/api/users` | JWT + ADMIN | Listar usuarios |
+| `GET` | `/api/users/:id` | JWT + ADMIN | Obtener usuario |
+| `DELETE` | `/api/users/:id` | JWT + ADMIN | Borrar usuario |
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Login (body): `{ "email": "user@example.com", "password": "..." }`.
+
+### Notificaciones (siempre del usuario del token)
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `POST` | `/api/notifications` | Crea mensaje `PENDING` |
+| `GET` | `/api/notifications` | Lista propias (más recientes primero) |
+| `GET` | `/api/notifications/:id` | Detalle propio |
+| `PATCH` | `/api/notifications/:id` | Actualiza campos permitidos |
+| `POST` | `/api/notifications/:id/send` | Encola envío (`202`, `{ status, jobId }`) |
+| `DELETE` | `/api/notifications/:id` | Elimina propia |
+
+Crear:
+
+```json
+{
+  "channel": "EMAIL",
+  "title": "Bienvenida",
+  "content": "Hola",
+  "recipient": "destino@example.com"
+}
+```
+
+`channel`: `EMAIL` | `SMS` | `PUSH`. El cliente no envía `userId`, `status` ni IDs internos de canal.
+
+Si el id no existe o es de otro usuario: `404` (sin filtrar existencia ajena).
+
+## Modelo de datos (resumen)
+
+- `User` — email único, `passwordHash`, `status`, `role`.
+- `Notification` — título, contenido, destinatario, canal, `status` (`PENDING` / `PROCESSING` / `SENT` / `FAILED`), `sentAt`, `lastError`.
+- `NotificationChannel` — catálogo (`EMAIL`, `SMS`, `PUSH`).
+- `NotificationDelivery` — intento de envío (payload, proveedor, error).
+
+Índices por `userId`, estado y `userId + createdAt`.
+
+## Entrega asíncrona
+
+1. `POST :id/send` añade un job `send-notification` a la cola `notifications`.
+2. El processor llama a `NotificationDeliveryService.send(userId, notificationId)`.
+3. Se crea un registro de delivery `PROCESSING`, se llama a la strategy del canal y se persiste `SENT` o `FAILED` en transacción.
+
+Los senders actuales son stubs de desarrollo (`development-email`, etc.). Sustituir la strategy no debe cambiar el orquestador.
+
+## Docker
+
+El `docker-compose` de la raíz construye este servicio, espera Postgres y Redis sanos, y monta `prisma/` para generar cliente. Healthcheck HTTP: revisar que apunte a una ruta pública cuando se endurezca el compose.
+
+## Tests
+
+Los tests de controlador mockean `NotificationQueueProducer` para no cargar BullMQ/ESM ni Redis.
+
+```bash
+npm run test:unit
+```
+
+CI (CircleCI) corre lint, unit tests, build y cobertura sobre este paquete.
+
+## Deuda conocida (backend)
+
+- Sin decorator Swagger en `POST :id/send`.
+- Encolar no valida ownership antes del job (el worker sí; jobs inválidos fallan en el worker).
+- Sin política explícita de retries/backoff en BullMQ.
+- Senders no hablan con un proveedor real.
+- Listados sin paginación.

@@ -26,9 +26,11 @@ import {
 } from './docs/notification-swagger.decorators';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, UpdateNotificationDto } from './request';
-import { NotificationResponseDto } from './response';
-import { NotificationDeliveryService } from './notification-delivery.service';
-import { NotificationSendResult } from './senders/contracts';
+import {
+  NotificationQueuedResponseDto,
+  NotificationResponseDto,
+} from './response';
+import { NotificationQueueProducer } from './queue/notification-queue.producer';
 
 /**
  * Handles authenticated HTTP operations for notifications.
@@ -43,7 +45,7 @@ import { NotificationSendResult } from './senders/contracts';
 export class NotificationsController {
   constructor(
     private readonly _notificationsService: NotificationsService,
-    private readonly _notificationDeliveryService: NotificationDeliveryService,
+    private readonly _notificationQueueProducer: NotificationQueueProducer,
   ) {}
 
   /**
@@ -117,20 +119,28 @@ export class NotificationsController {
   }
 
   /**
-   * Sends a notification owned by the authenticated user.
+   * Queues a notification for asynchronous delivery.
    *
    * @param user Authenticated application user.
    * @param id UUID of the notification to send.
-   * @returns Normalized delivery result.
+   * @returns Queue information for the accepted delivery request.
    */
   @Post(':id/send')
-  @HttpCode(HttpStatus.OK)
-  send(
+  @HttpCode(HttpStatus.ACCEPTED)
+  async send(
     @CurrentUser() user: UserModel,
     @Param('id', new ParseUUIDPipe())
     id: string,
-  ): Promise<NotificationSendResult> {
-    return this._notificationDeliveryService.send(user.id, id);
+  ): Promise<NotificationQueuedResponseDto> {
+    const jobId = await this._notificationQueueProducer.enqueueSend(
+      user.id,
+      id,
+    );
+
+    return {
+      status: 'QUEUED',
+      jobId,
+    };
   }
 
   /**
