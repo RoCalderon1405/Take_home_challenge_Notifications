@@ -1,9 +1,9 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
-import { setupSwagger } from './config/swagger.config';
+import { configureApp } from './config/app.config';
 
 /**
  * Bootstraps and configures the Notifications API.
@@ -17,25 +17,7 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(configService.getOrThrow<string>('PORT'));
 
-  const allowedOrigins = configService.getOrThrow<string>('ALLOWED_ORIGINS');
-
-  app.setGlobalPrefix('api');
-
-  app.enableCors({
-    origin: allowedOrigins,
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-  setupSwagger(app);
+  configureApp(app, configService);
 
   await app.listen(port, '0.0.0.0');
 

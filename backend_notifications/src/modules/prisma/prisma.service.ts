@@ -40,6 +40,6 @@ export class PrismaService
   async onModuleDestroy() {
     await this.$disconnect();
 
-    this.logger.error('Database disconnected successfully.');
+    this.logger.log('Database disconnected successfully.');
   }
 }

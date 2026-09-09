@@ -22,7 +22,41 @@ jobs:
         working-directory: backend_notifications
 
     env:
+      PORT: 3000
+      ALLOWED_ORIGINS: http://localhost:5173
+
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+      REDIS_URL: redis://localhost:6379
+
+      PASSWORD_PEPPER: ci-password-pepper-12345678901234567890
+      JWT_SECRET: ci-jwt-secret-123456789012345678901234567890
+
+      JWT_EXPIRES_IN_SECONDS: 3600
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: notifications
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d notifications"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
 
     steps:
       - name: Checkout repository
@@ -31,7 +65,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version: "24"
           cache: npm
           cache-dependency-path: backend_notifications/package-lock.json
 
@@ -44,11 +78,20 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Seed database
+        run: npx prisma db seed
+
       - name: Run lint
         run: npm run lint:check
 
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Run E2E tests
+        run: npm run test:e2e
+
       - name: Build backend
-        run: npm run build     
+        run: npm run build

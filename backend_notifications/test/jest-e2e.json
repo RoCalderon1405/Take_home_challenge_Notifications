@@ -3,7 +3,26 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "extensionsToTreatAsEsm": [".ts"],
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": {
+          "module": "ES2022",
+          "moduleResolution": "Bundler",
+          "target": "ES2023",
+          "esModuleInterop": true,
+          "allowSyntheticDefaultImports": true,
+          "isolatedModules": true,
+          "resolvePackageJsonExports": true
+        }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^@app/(.*)$": "<rootDir>/../src/$1",
+    "^(\\.{1,2}/.*)\\.js$": "$1"
   }
 }

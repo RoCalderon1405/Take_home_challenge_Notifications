@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import {
+  ApiAcceptedResponse,
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiBody,
@@ -14,7 +15,10 @@ import {
 } from '@nestjs/swagger';
 
 import { CreateNotificationDto, UpdateNotificationDto } from '../request';
-import { NotificationResponseDto } from '../response';
+import {
+  NotificationResponseDto,
+  NotificationQueuedResponseDto,
+} from '../response';
 
 const NOTIFICATION_ID_EXAMPLE = '70a7ad1a-8871-4b94-afca-201e8f6f0225';
 
@@ -225,6 +229,42 @@ export function ApiDeleteNotification() {
 
     ApiNoContentResponse({
       description: 'Notification deleted successfully.',
+    }),
+
+    ApiBadRequestResponse({
+      description: 'The notification identifier is not a valid UUID.',
+    }),
+
+    ApiNotFoundResponse({
+      description:
+        'The notification does not exist or does not belong to the authenticated user.',
+    }),
+  );
+}
+
+/**
+ * Documents the endpoint that queues a notification for asynchronous delivery.
+ */
+export function ApiSendNotification() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Send a notification',
+      description:
+        'Queues a notification owned by the authenticated user for asynchronous delivery.',
+    }),
+
+    ApiParam({
+      name: 'id',
+      description: 'Notification UUID.',
+      type: String,
+      format: 'uuid',
+      example: NOTIFICATION_ID_EXAMPLE,
+    }),
+
+    ApiAcceptedResponse({
+      description:
+        'Notification delivery request accepted and queued successfully.',
+      type: NotificationQueuedResponseDto,
     }),
 
     ApiBadRequestResponse({

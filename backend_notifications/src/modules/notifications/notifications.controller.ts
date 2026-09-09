@@ -22,6 +22,7 @@ import {
   ApiGetNotification,
   ApiGetNotifications,
   ApiNotificationsController,
+  ApiSendNotification,
   ApiUpdateNotification,
 } from './docs/notification-swagger.decorators';
 import { NotificationsService } from './notifications.service';
@@ -127,6 +128,7 @@ export class NotificationsController {
    */
   @Post(':id/send')
   @HttpCode(HttpStatus.ACCEPTED)
+  @ApiSendNotification()
   async send(
     @CurrentUser() user: UserModel,
     @Param('id', new ParseUUIDPipe())
