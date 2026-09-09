@@ -26,7 +26,7 @@ export class PushSenderStrategy implements NotificationSenderStrategy {
    * @param input Normalized notification data required for delivery.
    * @returns Normalized provider delivery information.
    */
-  send(input: NotificationSendInput): Promise<NotificationSendResult> {
+  async send(input: NotificationSendInput): Promise<NotificationSendResult> {
     const { notificationId, recipient, title, content } = input;
 
     this.logger.log(

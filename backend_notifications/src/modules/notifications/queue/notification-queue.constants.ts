@@ -12,3 +12,13 @@ export const NotificationJobName = {
 
 export type NotificationJobName =
   (typeof NotificationJobName)[keyof typeof NotificationJobName];
+
+/**
+ * Maximum number of total executions for a notification delivery job.
+ */
+export const NOTIFICATION_JOB_ATTEMPTS = 3;
+
+/**
+ * Initial delay for exponential retry backoff.
+ */
+export const NOTIFICATION_JOB_BACKOFF_DELAY_MS = 1_000;

@@ -151,10 +151,19 @@ describe('NotificationsController', () => {
   });
 
   describe('send', () => {
-    it('should queue an owned notification for asynchronous delivery', async () => {
+    it('should validate ownership and queue the notification', async () => {
+      notificationsServiceMock.findOneByIdForUser.mockResolvedValue(
+        notificationResponse,
+      );
+
       notificationQueueProducerMock.enqueueSend.mockResolvedValue('3');
 
       const result = await controller.send(user, notificationResponse.id);
+
+      expect(notificationsServiceMock.findOneByIdForUser).toHaveBeenCalledWith(
+        user.id,
+        notificationResponse.id,
+      );
 
       expect(notificationQueueProducerMock.enqueueSend).toHaveBeenCalledWith(
         user.id,

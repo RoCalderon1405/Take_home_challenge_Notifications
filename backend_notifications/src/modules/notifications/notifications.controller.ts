@@ -132,6 +132,8 @@ export class NotificationsController {
     @Param('id', new ParseUUIDPipe())
     id: string,
   ): Promise<NotificationQueuedResponseDto> {
+    await this._notificationsService.findOneByIdForUser(user.id, id);
+
     const jobId = await this._notificationQueueProducer.enqueueSend(
       user.id,
       id,

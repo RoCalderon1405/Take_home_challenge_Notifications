@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { PrismaErrorCode } from '@app/common/database';
+import { Prisma } from '@app/generated/prisma/client';
+
 import { PrismaService } from '../prisma/prisma.service';
 
 import { NotificationMapper } from './mappers';
 import { DeliveryStatus, NotificationStatus } from './models';
+import type { NotificationModel } from './models';
 
 import type { NotificationSendResult } from './senders/contracts';
 import { NotificationDispatcherService } from './senders/notification-dispatcher.service';
@@ -13,6 +17,8 @@ import { NotificationDispatcherService } from './senders/notification-dispatcher
  */
 @Injectable()
 export class NotificationDeliveryService {
+  private static readonly MAX_DELIVERY_CREATION_RETRIES = 3;
+
   constructor(
     private readonly _prismaService: PrismaService,
     private readonly _dispatcher: NotificationDispatcherService,
@@ -54,46 +60,11 @@ export class NotificationDeliveryService {
 
     const notificationModel = NotificationMapper.toModel(notification);
 
-    const lastDelivery =
-      await this._prismaService.notificationDelivery.findFirst({
-        where: {
-          notificationId,
-        },
-        orderBy: {
-          attemptNumber: 'desc',
-        },
-        select: {
-          attemptNumber: true,
-        },
-      });
-
-    const attemptNumber = (lastDelivery?.attemptNumber ?? 0) + 1;
-
-    const delivery = await this._prismaService.notificationDelivery.create({
-      data: {
-        notificationId,
-        attemptNumber,
-
-        status: DeliveryStatus.PROCESSING,
-
-        requestPayload: {
-          channel: notificationModel.channel,
-          recipient: notificationModel.recipient,
-          title: notificationModel.title,
-        },
-      },
-    });
-
-    await this._prismaService.notification.update({
-      where: {
-        id: notificationId,
-        userId,
-      },
-      data: {
-        status: NotificationStatus.PROCESSING,
-        lastError: null,
-      },
-    });
+    const delivery = await this.createDeliveryAttempt(
+      userId,
+      notificationId,
+      notificationModel,
+    );
 
     try {
       const result = await this._dispatcher.send(notificationModel);
@@ -107,15 +78,11 @@ export class NotificationDeliveryService {
           },
           data: {
             status: DeliveryStatus.SENT,
-
             provider: result.provider,
-
             providerResponse: {
               providerMessageId: result.providerMessageId ?? null,
-
               response: result.providerResponse ?? {},
             },
-
             errorMessage: null,
             completedAt,
           },
@@ -167,5 +134,95 @@ export class NotificationDeliveryService {
 
       throw error;
     }
+  }
+
+  /**
+   * Creates a delivery attempt and marks the notification as processing.
+   *
+   * Both operations are executed atomically. If concurrent workers calculate
+   * the same attempt number, the database unique constraint rejects one of
+   * them and the operation retries with the latest attempt number.
+   *
+   * @param userId Notification owner identifier.
+   * @param notificationId Notification identifier.
+   * @param notification Application notification data.
+   * @returns Identifier of the created delivery attempt.
+   */
+  private async createDeliveryAttempt(
+    userId: string,
+    notificationId: string,
+    notification: NotificationModel,
+  ): Promise<{ id: string }> {
+    for (
+      let retry = 0;
+      retry < NotificationDeliveryService.MAX_DELIVERY_CREATION_RETRIES;
+      retry++
+    ) {
+      try {
+        return await this._prismaService.$transaction(async (transaction) => {
+          const lastDelivery = await transaction.notificationDelivery.findFirst(
+            {
+              where: {
+                notificationId,
+              },
+              orderBy: {
+                attemptNumber: 'desc',
+              },
+              select: {
+                attemptNumber: true,
+              },
+            },
+          );
+
+          const attemptNumber = (lastDelivery?.attemptNumber ?? 0) + 1;
+
+          const delivery = await transaction.notificationDelivery.create({
+            data: {
+              notificationId,
+              attemptNumber,
+              status: DeliveryStatus.PROCESSING,
+              requestPayload: {
+                channel: notification.channel,
+                recipient: notification.recipient,
+                title: notification.title,
+              },
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          await transaction.notification.update({
+            where: {
+              id: notificationId,
+              userId,
+            },
+            data: {
+              status: NotificationStatus.PROCESSING,
+              lastError: null,
+            },
+          });
+
+          return delivery;
+        });
+      } catch (error: unknown) {
+        const isAttemptNumberCollision =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === PrismaErrorCode.UNIQUE_CONSTRAINT;
+
+        const canRetry =
+          retry < NotificationDeliveryService.MAX_DELIVERY_CREATION_RETRIES - 1;
+
+        if (isAttemptNumberCollision && canRetry) {
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw new Error(
+      `Unable to create delivery attempt for notification ${notificationId}`,
+    );
   }
 }
