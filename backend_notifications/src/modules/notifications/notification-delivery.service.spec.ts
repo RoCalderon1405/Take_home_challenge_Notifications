@@ -14,6 +14,7 @@ import {
 import { NotificationDeliveryService } from './notification-delivery.service';
 
 import { NotificationDispatcherService } from './senders/notification-dispatcher.service';
+import { NotificationProviderError } from './senders/errors/notification-provider.error';
 
 describe('NotificationDeliveryService', () => {
   const userId = '65d6e602-ca87-4fc1-aac5-971f36a22aaa';
@@ -42,7 +43,7 @@ describe('NotificationDeliveryService', () => {
   };
 
   const sendResult = {
-    provider: 'development-push',
+    provider: 'console-push',
     providerMessageId: 'push-message-1',
     providerResponse: {
       accepted: true,
@@ -216,7 +217,7 @@ describe('NotificationDeliveryService', () => {
       },
       data: {
         status: DeliveryStatus.SENT,
-        provider: 'development-push',
+        provider: 'console-push',
         providerResponse: {
           providerMessageId: 'push-message-1',
           response: {
@@ -244,7 +245,11 @@ describe('NotificationDeliveryService', () => {
   });
 
   it('should mark the delivery and notification as failed when dispatching fails', async () => {
-    const error = new Error('Provider unavailable');
+    const error = new NotificationProviderError(
+      'twilio',
+      'Provider unavailable',
+      false,
+    );
 
     prismaServiceMock.notification.findFirst.mockResolvedValue(notification);
 
@@ -292,6 +297,7 @@ describe('NotificationDeliveryService', () => {
       },
       data: {
         status: DeliveryStatus.FAILED,
+        provider: 'twilio',
         errorMessage: 'Provider unavailable',
         completedAt: fixedDate,
       },

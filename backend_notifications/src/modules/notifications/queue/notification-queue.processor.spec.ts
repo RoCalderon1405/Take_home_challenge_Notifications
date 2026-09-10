@@ -1,14 +1,15 @@
 import type { Job } from 'bullmq';
 
 import { NotificationDeliveryService } from '../notification-delivery.service';
+import { NotificationProviderError } from '../senders/errors/notification-provider.error';
 
 import type { SendNotificationJob } from './contracts/send-notification-job';
 
 import { NotificationJobName } from './notification-queue.constants';
 
 /**
- * BullMQ is replaced because this is a unit test.
- * The real Worker and Redis connection are not required.
+ * BullMQ infrastructure is replaced because this is a unit test.
+ * Redis and a real worker are not required.
  */
 jest.mock('@nestjs/bullmq', () => ({
   Processor: () => () => undefined,
@@ -28,6 +29,17 @@ describe('NotificationQueueProcessor', () => {
 
   const notificationId = '70a7ad1a-8871-4b94-afca-201e8f6f0225';
 
+  const createJob = (
+    name: string = NotificationJobName.SEND,
+  ): Job<SendNotificationJob> =>
+    ({
+      name,
+      data: {
+        userId,
+        notificationId,
+      },
+    }) as Job<SendNotificationJob>;
+
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -37,17 +49,9 @@ describe('NotificationQueueProcessor', () => {
   });
 
   it('should process a send notification job', async () => {
-    const job = {
-      name: NotificationJobName.SEND,
-      data: {
-        userId,
-        notificationId,
-      },
-    } as Job<SendNotificationJob>;
-
     deliveryServiceMock.send.mockResolvedValue(undefined);
 
-    await processor.process(job);
+    await processor.process(createJob());
 
     expect(deliveryServiceMock.send).toHaveBeenCalledWith(
       userId,
@@ -56,18 +60,39 @@ describe('NotificationQueueProcessor', () => {
   });
 
   it('should reject unsupported job names', async () => {
-    const job = {
-      name: 'unsupported-job',
-      data: {
-        userId,
-        notificationId,
-      },
-    } as Job<SendNotificationJob>;
-
-    await expect(processor.process(job)).rejects.toThrow(
-      'Unsupported notification job: unsupported-job',
-    );
+    await expect(
+      processor.process(createJob('unsupported-job')),
+    ).rejects.toThrow('Unsupported notification job: unsupported-job');
 
     expect(deliveryServiceMock.send).not.toHaveBeenCalled();
+  });
+
+  it('should stop retries for non-retryable provider errors', async () => {
+    const providerError = new NotificationProviderError(
+      'twilio',
+      'Twilio failed to send SMS: invalid destination',
+      false,
+      21211,
+    );
+
+    deliveryServiceMock.send.mockRejectedValue(providerError);
+
+    await expect(processor.process(createJob())).rejects.toMatchObject({
+      name: 'UnrecoverableError',
+      message: 'Twilio failed to send SMS: invalid destination',
+    });
+  });
+
+  it('should preserve retryable provider errors so BullMQ can retry them', async () => {
+    const providerError = new NotificationProviderError(
+      'twilio',
+      'Twilio failed to send SMS: HTTP 503',
+      true,
+      503,
+    );
+
+    deliveryServiceMock.send.mockRejectedValue(providerError);
+
+    await expect(processor.process(createJob())).rejects.toBe(providerError);
   });
 });

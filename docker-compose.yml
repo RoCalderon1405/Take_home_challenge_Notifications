@@ -123,7 +123,12 @@ services:
     build:
       context: ./frontend_notifications
       dockerfile: Dockerfile
+
     restart: unless-stopped
+
+    env_file:
+      - ./frontend_notifications/.env
+    
     environment:
       CHOKIDAR_USEPOLLING: "true"
       VITE_HOST: 0.0.0.0

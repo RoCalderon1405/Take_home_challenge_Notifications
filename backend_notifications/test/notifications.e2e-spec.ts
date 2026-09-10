@@ -276,8 +276,84 @@ describe('Notifications flow (e2e)', () => {
 
     expect(delivery?.status).toBe('SENT');
 
-    expect(delivery?.provider).toBeDefined();
+    expect(delivery?.provider).toBe('console-email');
 
     expect(delivery?.completedAt).not.toBeNull();
+  });
+
+  it('should queue and process an SMS notification through the configured provider', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/notifications')
+      .set('Authorization', `Bearer ${userAToken}`)
+      .send({
+        channel: 'SMS',
+        title: 'E2E SMS notification',
+        content: 'SMS notification created by user A.',
+        recipient: '+525551234567',
+      })
+      .expect(201);
+
+    const notification = createResponse.body as NotificationResponse;
+
+    await request(app.getHttpServer())
+      .post(`/api/notifications/${notification.id}/send`)
+      .set('Authorization', `Bearer ${userAToken}`)
+      .expect(202);
+
+    await waitUntilNotificationIsSent(notification.id);
+
+    const delivery = await prismaService.notificationDelivery.findFirst({
+      where: {
+        notificationId: notification.id,
+      },
+      orderBy: {
+        attemptNumber: 'desc',
+      },
+      select: {
+        status: true,
+        provider: true,
+      },
+    });
+
+    expect(delivery?.status).toBe('SENT');
+    expect(delivery?.provider).toBe('console-sms');
+  });
+
+  it('should queue and process a Push notification through the configured provider', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/notifications')
+      .set('Authorization', `Bearer ${userAToken}`)
+      .send({
+        channel: 'PUSH',
+        title: 'E2E Push notification',
+        content: 'Push notification created by user A.',
+        recipient: 'e2e-device-token',
+      })
+      .expect(201);
+
+    const notification = createResponse.body as NotificationResponse;
+
+    await request(app.getHttpServer())
+      .post(`/api/notifications/${notification.id}/send`)
+      .set('Authorization', `Bearer ${userAToken}`)
+      .expect(202);
+
+    await waitUntilNotificationIsSent(notification.id);
+
+    const delivery = await prismaService.notificationDelivery.findFirst({
+      where: {
+        notificationId: notification.id,
+      },
+      orderBy: {
+        attemptNumber: 'desc',
+      },
+      select: {
+        status: true,
+        provider: true,
+      },
+    });
+
+    expect(delivery?.status).toBe('SENT');
+    expect(delivery?.provider).toBe('console-push');
   });
 });

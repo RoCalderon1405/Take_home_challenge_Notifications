@@ -5,22 +5,21 @@ import { PrismaModule } from '../prisma/prisma.module';
 
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
+import { NotificationDeliveryService } from './notification-delivery.service';
 
 import type { NotificationSenderStrategy } from './senders/contracts';
-
 import {
   NotificationDispatcherService,
   NOTIFICATION_SENDER_STRATEGIES,
   NotificationSenderRegistry,
 } from './senders';
-
+import { NotificationProvidersModule } from './senders/providers/notification-providers.module';
 import {
   EmailSenderStrategy,
   PushSenderStrategy,
   SmsSenderStrategy,
 } from './senders/strategies';
 
-import { NotificationDeliveryService } from './notification-delivery.service';
 import { NotificationQueueProducer } from './queue/notification-queue.producer';
 import { NOTIFICATION_QUEUE } from './queue/notification-queue.constants';
 import { NotificationQueueProcessor } from './queue/notification-queue.processor';
@@ -28,12 +27,13 @@ import { NotificationQueueProcessor } from './queue/notification-queue.processor
 /**
  * Provides notification management and delivery capabilities.
  *
- * Notification sender strategies are registered through a common
- * dependency injection token and resolved by NotificationSenderRegistry.
+ * Sender strategies represent notification channels. Infrastructure provider
+ * selection is isolated inside NotificationProvidersModule.
  */
 @Module({
   imports: [
     PrismaModule,
+    NotificationProvidersModule,
     BullModule.registerQueue({ name: NOTIFICATION_QUEUE }),
   ],
 
@@ -52,13 +52,11 @@ import { NotificationQueueProcessor } from './queue/notification-queue.processor
 
     {
       provide: NOTIFICATION_SENDER_STRATEGIES,
-
       useFactory: (
         emailSender: EmailSenderStrategy,
         smsSender: SmsSenderStrategy,
         pushSender: PushSenderStrategy,
       ): NotificationSenderStrategy[] => [emailSender, smsSender, pushSender],
-
       inject: [EmailSenderStrategy, SmsSenderStrategy, PushSenderStrategy],
     },
 

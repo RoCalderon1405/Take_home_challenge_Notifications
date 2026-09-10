@@ -5,6 +5,18 @@ import { PrismaErrorCode } from './prisma-error-code';
 type PrismaErrorHandlers = Partial<Record<PrismaErrorCode, () => Error>>;
 
 /**
+ * Narrows unknown errors to Prisma known request errors.
+ *
+ * Prisma's generated runtime error class is wrapped by the generated client,
+ * so keeping the narrowing in one place avoids leaking that runtime detail
+ * throughout application services.
+ */
+export const isPrismaKnownRequestError = (
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError =>
+  error instanceof Prisma.PrismaClientKnownRequestError;
+
+/**
  * Translates known Prisma persistence errors into application-level errors.
  *
  * Services define the semantic meaning of each Prisma error while this
@@ -21,7 +33,7 @@ export class PrismaErrorHandler {
    * @param handlers Mapping between Prisma error codes and application errors.
    */
   static handle(error: unknown, handlers: PrismaErrorHandlers): never {
-    if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+    if (!isPrismaKnownRequestError(error)) {
       throw error;
     }
 

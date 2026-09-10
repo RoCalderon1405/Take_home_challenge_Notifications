@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { NotificationChannelCode } from '../../models';
 import type {
@@ -6,43 +6,22 @@ import type {
   NotificationSendInput,
   NotificationSendResult,
 } from '../contracts';
+import type { SmsProvider } from '../providers/sms/sms-provider';
+import { SMS_PROVIDER } from '../providers/sms/sms-provider.constants';
 
 /**
- * Delivers notifications through the SMS channel.
- *
- * This implementation currently simulates a provider response.
- * A real SMS provider can replace the internal delivery logic later
- * without changing the notification orchestration layer.
+ * Notification sender strategy for the SMS channel.
  */
 @Injectable()
 export class SmsSenderStrategy implements NotificationSenderStrategy {
   readonly channel = NotificationChannelCode.SMS;
 
-  private readonly logger = new Logger(SmsSenderStrategy.name);
+  constructor(
+    @Inject(SMS_PROVIDER)
+    private readonly smsProvider: SmsProvider,
+  ) {}
 
-  /**
-   * Sends a notification through the SMS channel.
-   *
-   * @param input Normalized notification data required for delivery.
-   * @returns Normalized provider delivery information.
-   */
   send(input: NotificationSendInput): Promise<NotificationSendResult> {
-    const { notificationId, recipient, content } = input;
-
-    this.logger.log(
-      `Sending SMS notification ${notificationId} to ${recipient}`,
-    );
-
-    const providerMessageId = `sms-${notificationId}-${Date.now()}`;
-
-    return Promise.resolve({
-      provider: 'development-sms',
-      providerMessageId,
-      providerResponse: {
-        accepted: true,
-        recipient,
-        contentLength: content.length,
-      },
-    });
+    return this.smsProvider.send(input);
   }
 }

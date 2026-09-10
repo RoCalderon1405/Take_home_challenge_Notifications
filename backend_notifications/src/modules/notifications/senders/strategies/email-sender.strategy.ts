@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { NotificationChannelCode } from '../../models';
 import type {
@@ -6,44 +6,25 @@ import type {
   NotificationSendInput,
   NotificationSendResult,
 } from '../contracts';
+import type { EmailProvider } from '../providers/email/email-provider';
+import { EMAIL_PROVIDER } from '../providers/email/email-provider.constants';
 
 /**
- * Delivers notifications through the Email channel.
+ * Notification sender strategy for the Email channel.
  *
- * This implementation currently simulates a provider response.
- * A real email provider can replace the internal delivery logic later
- * without changing the notification orchestration layer.
+ * Channel selection belongs to the strategy while the external delivery
+ * mechanism is delegated to the configured EmailProvider implementation.
  */
 @Injectable()
 export class EmailSenderStrategy implements NotificationSenderStrategy {
   readonly channel = NotificationChannelCode.EMAIL;
 
-  private readonly logger = new Logger(EmailSenderStrategy.name);
+  constructor(
+    @Inject(EMAIL_PROVIDER)
+    private readonly emailProvider: EmailProvider,
+  ) {}
 
-  /**
-   * Sends a notification through the Email channel.
-   *
-   * @param input Normalized notification data required for delivery.
-   * @returns Normalized provider delivery information.
-   */
   send(input: NotificationSendInput): Promise<NotificationSendResult> {
-    const { notificationId, recipient, title, content } = input;
-
-    this.logger.log(
-      `Sending EMAIL notification ${notificationId} to ${recipient}`,
-    );
-
-    const providerMessageId = `email-${notificationId}-${Date.now()}`;
-
-    return Promise.resolve({
-      provider: 'development-email',
-      providerMessageId,
-      providerResponse: {
-        accepted: true,
-        recipient,
-        title,
-        contentLength: content.length,
-      },
-    });
+    return this.emailProvider.send(input);
   }
 }

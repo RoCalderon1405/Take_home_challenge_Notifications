@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaErrorCode } from '@app/common/database';
-import { Prisma } from '@app/generated/prisma/client';
+import {
+  isPrismaKnownRequestError,
+  PrismaErrorCode,
+} from '@app/common/database';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +13,7 @@ import type { NotificationModel } from './models';
 
 import type { NotificationSendResult } from './senders/contracts';
 import { NotificationDispatcherService } from './senders/notification-dispatcher.service';
+import { NotificationProviderError } from './senders/errors/notification-provider.error';
 
 /**
  * Orchestrates notification delivery and persists each delivery attempt.
@@ -106,6 +109,9 @@ export class NotificationDeliveryService {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
+      const provider =
+        error instanceof NotificationProviderError ? error.provider : null;
+
       const completedAt = new Date();
 
       await this._prismaService.$transaction([
@@ -115,6 +121,7 @@ export class NotificationDeliveryService {
           },
           data: {
             status: DeliveryStatus.FAILED,
+            provider,
             errorMessage,
             completedAt,
           },
@@ -207,7 +214,7 @@ export class NotificationDeliveryService {
         });
       } catch (error: unknown) {
         const isAttemptNumberCollision =
-          error instanceof Prisma.PrismaClientKnownRequestError &&
+          isPrismaKnownRequestError(error) &&
           error.code === PrismaErrorCode.UNIQUE_CONSTRAINT;
 
         const canRetry =
