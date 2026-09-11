@@ -5,10 +5,11 @@
     ],
     "exclude": [
       "node_modules",
-      "dist",
       "test",
-      "src/generated/**/*",
-      "src/**/*.spec.ts",
-      "src/**/*.e2e-spec.ts"
+      "dist",
+      "documentation",
+      "src/generated",
+      "**/*.spec.ts",
+      "**/*.e2e-spec.ts"
     ]
   }
