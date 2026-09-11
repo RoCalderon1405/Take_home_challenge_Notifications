@@ -54,7 +54,8 @@ export class NotificationsController {
   ) {}
 
   /**
-   * Creates a notification owned by the authenticated user.
+   * Creates a notification owned by the authenticated user and immediately
+   * queues its first asynchronous delivery attempt.
    *
    * @param user Authenticated application user.
    * @param createNotificationDto Notification data supplied by the client.
@@ -62,12 +63,19 @@ export class NotificationsController {
    */
   @Post()
   @ApiCreateNotification()
-  create(
+  async create(
     @CurrentUser() user: UserModel,
     @Body()
     createNotificationDto: CreateNotificationDto,
   ): Promise<NotificationResponseDto> {
-    return this._notificationsService.create(user.id, createNotificationDto);
+    const notification = await this._notificationsService.create(
+      user.id,
+      createNotificationDto,
+    );
+
+    await this._notificationQueueProducer.enqueueSend(user.id, notification.id);
+
+    return notification;
   }
 
   /**

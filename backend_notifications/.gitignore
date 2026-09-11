@@ -6,6 +6,7 @@
 .claude/*
 .windsurf/*
 documentation
+README.md
 
 # Logs
 logs
@@ -31,7 +32,6 @@ lerna-debug.log*
 *.launch
 .settings/
 *.sublime-workspace
-README.md
 
 # IDE - VSCode
 .vscode/*

@@ -69,14 +69,10 @@ export class AuthService {
       email: user.email,
     };
 
-    // TODO 1:
-    // Generate the JWT using the asynchronous JwtService method.
     const accessToken = await this._jwtService.signAsync(payload);
     return {
       user,
       accessToken,
-      // TODO 2:
-      // Return the generated token with the property name accessToken.
     };
   }
 }

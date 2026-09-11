@@ -79,7 +79,7 @@ export const envSchema = z
       z
         .string()
         .url({ message: 'PUBLIC_API_BASE_URL must be a valid URL' })
-        .transform((value) => value.replace(/\/$/, ''))
+        .transform((value) => value.replace(/\/+$/, ''))
         .optional(),
     ),
 
@@ -101,6 +101,13 @@ export const envSchema = z
       addRequiredIssue(ctx, config.RESEND_API_KEY, 'RESEND_API_KEY', 'resend');
 
       addRequiredIssue(ctx, config.EMAIL_FROM, 'EMAIL_FROM', 'resend');
+
+      addRequiredIssue(
+        ctx,
+        config.RESEND_WEBHOOK_SECRET,
+        'RESEND_WEBHOOK_SECRET',
+        'resend',
+      );
     }
 
     if (config.SMS_PROVIDER === 'twilio') {
@@ -132,14 +139,19 @@ export const envSchema = z
         'twilio',
       );
 
-      if (config.PUBLIC_API_BASE_URL) {
-        addRequiredIssue(
-          ctx,
-          config.TWILIO_AUTH_TOKEN,
-          'TWILIO_AUTH_TOKEN',
-          'Twilio status callbacks are enabled',
-        );
-      }
+      addRequiredIssue(
+        ctx,
+        config.TWILIO_AUTH_TOKEN,
+        'TWILIO_AUTH_TOKEN',
+        'twilio',
+      );
+
+      addRequiredIssue(
+        ctx,
+        config.PUBLIC_API_BASE_URL,
+        'PUBLIC_API_BASE_URL',
+        'twilio',
+      );
     }
 
     if (config.PUSH_PROVIDER === 'firebase') {

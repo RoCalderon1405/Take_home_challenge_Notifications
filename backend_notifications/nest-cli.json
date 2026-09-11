@@ -12,6 +12,7 @@
           "introspectComments": true
         }
       }
-    ]
+    ],
+    "tsConfigPath": "tsconfig.build.json"
   }
 }

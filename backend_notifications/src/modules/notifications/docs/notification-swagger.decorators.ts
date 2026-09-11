@@ -48,7 +48,7 @@ export function ApiCreateNotification() {
     ApiOperation({
       summary: 'Create a notification',
       description:
-        'Creates a new pending notification owned by the authenticated user.',
+        'Creates a new notification owned by the authenticated user and immediately queues its first asynchronous delivery attempt.',
     }),
 
     ApiBody({
@@ -86,7 +86,8 @@ export function ApiCreateNotification() {
     }),
 
     ApiCreatedResponse({
-      description: 'Notification created successfully.',
+      description:
+        'Notification created and queued for asynchronous delivery successfully.',
       type: NotificationResponseDto,
     }),
 

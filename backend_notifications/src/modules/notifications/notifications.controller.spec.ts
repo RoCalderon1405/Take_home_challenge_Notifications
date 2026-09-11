@@ -98,6 +98,11 @@ describe('NotificationsController', () => {
         dto,
       );
 
+      expect(notificationQueueProducerMock.enqueueSend).toHaveBeenCalledWith(
+        user.id,
+        notificationResponse.id,
+      );
+
       expect(result).toEqual(notificationResponse);
     });
   });
