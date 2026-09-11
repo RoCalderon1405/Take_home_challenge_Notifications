@@ -19,6 +19,7 @@ export class NotificationResponseDto {
 
   lastError!: string | null;
   sentAt!: Date | null;
+  deliveredAt!: Date | null;
 
   createdAt!: Date;
   updatedAt!: Date;

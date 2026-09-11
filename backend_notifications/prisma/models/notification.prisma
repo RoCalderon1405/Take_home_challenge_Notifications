@@ -8,9 +8,10 @@ model Notification {
   content   String @db.Text
   recipient String @db.VarChar(500)
 
-  status    NotificationStatus @default(PENDING)
-  lastError String?            @map("last_error") @db.Text
-  sentAt    DateTime?          @map("sent_at") @db.Timestamptz(6)
+  status      NotificationStatus @default(PENDING)
+  lastError   String?            @map("last_error") @db.Text
+  sentAt      DateTime?          @map("sent_at") @db.Timestamptz(6)
+  deliveredAt DateTime?          @map("delivered_at") @db.Timestamptz(6)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

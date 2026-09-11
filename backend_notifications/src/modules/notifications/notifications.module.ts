@@ -6,6 +6,17 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
 import { NotificationDeliveryService } from './notification-delivery.service';
+import {
+  NotificationDeliveryQueryService,
+  NotificationDeliveryTrackingService,
+} from './delivery-tracking';
+import {
+  ResendWebhookController,
+  ResendWebhookService,
+  TwilioRequestValidatorService,
+  TwilioWebhookController,
+  TwilioWebhookService,
+} from './webhooks';
 
 import type { NotificationSenderStrategy } from './senders/contracts';
 import {
@@ -37,11 +48,20 @@ import { NotificationQueueProcessor } from './queue/notification-queue.processor
     BullModule.registerQueue({ name: NOTIFICATION_QUEUE }),
   ],
 
-  controllers: [NotificationsController],
+  controllers: [
+    NotificationsController,
+    ResendWebhookController,
+    TwilioWebhookController,
+  ],
 
   providers: [
     NotificationsService,
     NotificationDeliveryService,
+    NotificationDeliveryQueryService,
+    NotificationDeliveryTrackingService,
+    ResendWebhookService,
+    TwilioRequestValidatorService,
+    TwilioWebhookService,
 
     NotificationQueueProcessor,
     NotificationQueueProducer,

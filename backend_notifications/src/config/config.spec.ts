@@ -125,4 +125,49 @@ describe('environment provider configuration', () => {
 
     expect(result.success).toBe(true);
   });
+  it('should allow webhook secrets to be omitted for console providers', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      RESEND_WEBHOOK_SECRET: '',
+      TWILIO_AUTH_TOKEN: '',
+      PUBLIC_API_BASE_URL: '',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('should require Twilio Auth Token when automatic status callbacks are enabled', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      SMS_PROVIDER: 'twilio',
+      TWILIO_ACCOUNT_SID: 'AC123',
+      TWILIO_API_KEY_SID: 'SK123',
+      TWILIO_API_KEY_SECRET: 'twilio-api-key-secret',
+      TWILIO_FROM_NUMBER: '+15551234567',
+      PUBLIC_API_BASE_URL: 'https://api.example.com',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept Twilio status callback configuration and normalize the base URL', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      SMS_PROVIDER: 'twilio',
+      TWILIO_ACCOUNT_SID: 'AC123',
+      TWILIO_API_KEY_SID: 'SK123',
+      TWILIO_API_KEY_SECRET: 'twilio-api-key-secret',
+      TWILIO_FROM_NUMBER: '+15551234567',
+      TWILIO_AUTH_TOKEN: 'primary-auth-token',
+      PUBLIC_API_BASE_URL: 'https://api.example.com/',
+    });
+
+    expect(result.success).toBe(true);
+
+    if (!result.success) {
+      throw new Error('Expected environment parsing to succeed');
+    }
+
+    expect(result.data.PUBLIC_API_BASE_URL).toBe('https://api.example.com');
+  });
 });

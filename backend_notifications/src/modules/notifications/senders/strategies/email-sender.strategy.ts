@@ -24,6 +24,10 @@ export class EmailSenderStrategy implements NotificationSenderStrategy {
     private readonly emailProvider: EmailProvider,
   ) {}
 
+  get providerName(): string {
+    return this.emailProvider.name;
+  }
+
   send(input: NotificationSendInput): Promise<NotificationSendResult> {
     return this.emailProvider.send(input);
   }

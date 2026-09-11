@@ -1,3 +1,4 @@
+export * from './delivery-event-type';
 export { DeliveryStatus } from './delivery-status';
 export * from './notification-channel-code';
 export * from './notification-status';

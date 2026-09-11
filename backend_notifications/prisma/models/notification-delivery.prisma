@@ -6,20 +6,44 @@ model NotificationDelivery {
 
   status DeliveryStatus @default(PENDING)
 
-  provider         String? @db.VarChar(100)
-  requestPayload   Json?   @map("request_payload") @db.JsonB
-  providerResponse Json?   @map("provider_response") @db.JsonB
-  errorMessage     String? @map("error_message") @db.Text
+  provider          String? @db.VarChar(100)
+  providerMessageId String? @map("provider_message_id") @db.VarChar(255)
+  requestPayload    Json?   @map("request_payload") @db.JsonB
+  providerResponse  Json?   @map("provider_response") @db.JsonB
+  errorMessage      String? @map("error_message") @db.Text
 
   startedAt   DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
   completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(6)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_deliveries_notification")
+  notification Notification                @relation(fields: [notificationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_deliveries_notification")
+  events       NotificationDeliveryEvent[]
 
   @@unique([notificationId, attemptNumber], map: "uq_delivery_notification_attempt")
   @@index([notificationId], map: "idx_deliveries_notification_id")
   @@index([status], map: "idx_deliveries_status")
   @@index([createdAt], map: "idx_deliveries_created_at")
+  @@index([provider, providerMessageId], map: "idx_deliveries_provider_message_id")
   @@map("notification_deliveries")
+}
+
+model NotificationDeliveryEvent {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  deliveryId      String  @map("delivery_id") @db.Uuid
+  provider        String  @db.VarChar(100)
+  providerEventId String? @map("provider_event_id") @db.VarChar(255)
+  eventType       String  @map("event_type") @db.VarChar(80)
+  payload         Json    @db.JsonB
+
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  delivery NotificationDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_delivery_events_delivery")
+
+  @@unique([provider, providerEventId], map: "uq_delivery_event_provider_event")
+  @@index([deliveryId], map: "idx_delivery_events_delivery_id")
+  @@index([occurredAt], map: "idx_delivery_events_occurred_at")
+  @@map("notification_delivery_events")
 }

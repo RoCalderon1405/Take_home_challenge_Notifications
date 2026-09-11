@@ -11,7 +11,7 @@ import { configureApp } from './config/app.config';
 async function bootstrap(): Promise<void> {
   const logger = new Logger('Notifications - App');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   const configService = app.get(ConfigService);
 

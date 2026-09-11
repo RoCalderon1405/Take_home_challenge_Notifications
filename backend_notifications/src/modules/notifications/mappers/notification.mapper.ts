@@ -47,6 +47,7 @@ export class NotificationMapper {
 
       lastError: notification.lastError,
       sentAt: notification.sentAt,
+      deliveredAt: notification.deliveredAt,
 
       createdAt: notification.createdAt,
       updatedAt: notification.updatedAt,
@@ -76,6 +77,7 @@ export class NotificationMapper {
 
       lastError: notification.lastError,
       sentAt: notification.sentAt,
+      deliveredAt: notification.deliveredAt,
 
       createdAt: notification.createdAt,
       updatedAt: notification.updatedAt,

@@ -10,6 +10,7 @@ enum NotificationStatus {
   PENDING
   PROCESSING
   SENT
+  DELIVERED
   FAILED
 
   @@map("notification_status")
@@ -19,6 +20,7 @@ enum DeliveryStatus {
   PENDING
   PROCESSING
   SENT
+  DELIVERED
   FAILED
 
   @@map("delivery_status")

@@ -16,6 +16,7 @@ import {
 
 import { CreateNotificationDto, UpdateNotificationDto } from '../request';
 import {
+  NotificationDeliveryResponseDto,
   NotificationResponseDto,
   NotificationQueuedResponseDto,
 } from '../response';
@@ -265,6 +266,40 @@ export function ApiSendNotification() {
       description:
         'Notification delivery request accepted and queued successfully.',
       type: NotificationQueuedResponseDto,
+    }),
+
+    ApiBadRequestResponse({
+      description: 'The notification identifier is not a valid UUID.',
+    }),
+
+    ApiNotFoundResponse({
+      description:
+        'The notification does not exist or does not belong to the authenticated user.',
+    }),
+  );
+}
+
+/** Documents the owner-scoped normalized delivery timeline endpoint. */
+export function ApiGetNotificationDeliveries() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'List notification delivery attempts',
+      description:
+        'Returns provider-independent delivery attempts and event history for a notification owned by the authenticated user.',
+    }),
+
+    ApiParam({
+      name: 'id',
+      description: 'Notification UUID.',
+      type: String,
+      format: 'uuid',
+      example: NOTIFICATION_ID_EXAMPLE,
+    }),
+
+    ApiOkResponse({
+      description: 'Notification delivery history retrieved successfully.',
+      type: NotificationDeliveryResponseDto,
+      isArray: true,
     }),
 
     ApiBadRequestResponse({

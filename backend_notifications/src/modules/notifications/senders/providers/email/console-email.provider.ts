@@ -12,6 +12,8 @@ import type { EmailProvider, EmailProviderResult } from './email-provider';
  */
 @Injectable()
 export class ConsoleEmailProvider implements EmailProvider {
+  readonly name = 'console-email';
+
   private readonly logger = new Logger(ConsoleEmailProvider.name);
 
   send(input: NotificationSendInput): Promise<EmailProviderResult> {
@@ -22,7 +24,7 @@ export class ConsoleEmailProvider implements EmailProvider {
     );
 
     return Promise.resolve({
-      provider: 'console-email',
+      provider: this.name,
       providerMessageId: `console-email-${notificationId}-${Date.now()}`,
       providerResponse: {
         accepted: true,

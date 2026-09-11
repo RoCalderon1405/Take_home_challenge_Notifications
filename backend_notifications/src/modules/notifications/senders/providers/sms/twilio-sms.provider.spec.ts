@@ -29,6 +29,7 @@ describe('TwilioSmsProvider', () => {
 
   const configService = {
     getOrThrow: jest.fn((key: keyof typeof config) => config[key]),
+    get: jest.fn(),
   };
 
   beforeAll(() => {
@@ -39,6 +40,8 @@ describe('TwilioSmsProvider', () => {
     fetchMock.mockReset();
 
     configService.getOrThrow.mockClear();
+    configService.get.mockReset();
+    configService.get.mockReturnValue(undefined);
   });
 
   afterAll(() => {
@@ -102,10 +105,10 @@ describe('TwilioSmsProvider', () => {
     }
 
     expect(options.body.get('To')).toBe('+525551234567');
-
     expect(options.body.get('From')).toBe('+15551234567');
-
     expect(options.body.get('Body')).toBe('Alert\nSMS body');
+
+    expect(options.body.get('StatusCallback')).toBeNull();
 
     expect(result).toEqual({
       provider: 'twilio',
@@ -118,6 +121,46 @@ describe('TwilioSmsProvider', () => {
         errorCode: null,
       },
     });
+  });
+
+  it('should include the configured status callback URL', async () => {
+    configService.get.mockImplementation((key: string) =>
+      key === 'PUBLIC_API_BASE_URL' ? 'https://api.example.com/' : undefined,
+    );
+
+    fetchMock.mockResolvedValue(
+      createJsonResponse(
+        {
+          sid: 'SM456',
+          status: 'queued',
+          to: '+525551234567',
+          from: '+15551234567',
+          error_code: null,
+        },
+        201,
+      ),
+    );
+
+    const provider = new TwilioSmsProvider(
+      configService as unknown as ConfigService,
+    );
+
+    await provider.send({
+      notificationId: 'notification-1',
+      recipient: '+525551234567',
+      title: 'Alert',
+      content: 'SMS body',
+    });
+
+    const [, options] = fetchMock.mock.calls[0];
+
+    if (!options || !(options.body instanceof URLSearchParams)) {
+      throw new Error('Expected Twilio request body to be URLSearchParams');
+    }
+
+    expect(options.body.get('StatusCallback')).toBe(
+      'https://api.example.com/api/webhooks/twilio/status',
+    );
   });
 
   it('should mark Twilio client errors as non-retryable', async () => {

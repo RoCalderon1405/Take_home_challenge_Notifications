@@ -1,7 +1,13 @@
-import { NotificationChannelCode, NotificationStatus } from './models';
+import {
+  DeliveryEventType,
+  DeliveryStatus,
+  NotificationChannelCode,
+  NotificationStatus,
+} from './models';
 
 import { NotificationsService } from './notifications.service';
 
+import type { NotificationDeliveryQueryService } from './delivery-tracking';
 import type { NotificationQueueProducer } from './queue/notification-queue.producer';
 import type { UserModel } from '../users/models';
 
@@ -37,6 +43,10 @@ describe('NotificationsController', () => {
     remove: jest.fn(),
   };
 
+  const notificationDeliveryQueryServiceMock = {
+    findForUser: jest.fn(),
+  };
+
   const notificationQueueProducerMock = {
     enqueueSend: jest.fn(),
   };
@@ -55,6 +65,7 @@ describe('NotificationsController', () => {
     status: NotificationStatus.PENDING,
     lastError: null,
     sentAt: null,
+    deliveredAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -64,6 +75,7 @@ describe('NotificationsController', () => {
 
     controller = new NotificationsController(
       notificationsServiceMock as unknown as NotificationsService,
+      notificationDeliveryQueryServiceMock as unknown as NotificationDeliveryQueryService,
       notificationQueueProducerMock as unknown as NotificationQueueProducer,
     );
   });
@@ -103,6 +115,47 @@ describe('NotificationsController', () => {
       );
 
       expect(result).toEqual([notificationResponse]);
+    });
+  });
+
+  describe('findDeliveries', () => {
+    it('should return normalized delivery history for the authenticated user', async () => {
+      const occurredAt = new Date('2026-09-10T12:00:00.000Z');
+
+      const deliveries = [
+        {
+          id: '1c657eb2-19d1-42da-a6a4-c6168e30b67c',
+          attemptNumber: 1,
+          status: DeliveryStatus.SENT,
+          provider: 'resend',
+          providerMessageId: 'email-message-1',
+          startedAt: occurredAt,
+          completedAt: occurredAt,
+          deliveredAt: null,
+          events: [
+            {
+              id: '3a703fb0-39db-42ab-b2c4-c0b54f211a62',
+              eventType: DeliveryEventType.SENT,
+              occurredAt,
+            },
+          ],
+        },
+      ];
+
+      notificationDeliveryQueryServiceMock.findForUser.mockResolvedValue(
+        deliveries,
+      );
+
+      const result = await controller.findDeliveries(
+        user,
+        notificationResponse.id,
+      );
+
+      expect(
+        notificationDeliveryQueryServiceMock.findForUser,
+      ).toHaveBeenCalledWith(user.id, notificationResponse.id);
+
+      expect(result).toEqual(deliveries);
     });
   });
 

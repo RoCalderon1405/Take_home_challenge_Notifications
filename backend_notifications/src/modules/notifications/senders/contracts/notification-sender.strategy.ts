@@ -33,5 +33,13 @@ export interface NotificationSendResult {
 export interface NotificationSenderStrategy {
   readonly channel: NotificationChannelCode;
 
+  /**
+   * Selected infrastructure provider for this channel.
+   *
+   * Exposed before `send()` so a delivery attempt can record the provider
+   * even when the external call fails.
+   */
+  readonly providerName: string;
+
   send(input: NotificationSendInput): Promise<NotificationSendResult>;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import type { NotificationModel } from '../models';
+import type { NotificationChannelCode, NotificationModel } from '../models';
 
 import type { NotificationSendResult } from './contracts';
 import { NotificationSenderRegistry } from './notification-sender.registry';
@@ -15,6 +15,11 @@ import { NotificationSenderRegistry } from './notification-sender.registry';
 @Injectable()
 export class NotificationDispatcherService {
   constructor(private readonly _senderRegistry: NotificationSenderRegistry) {}
+
+  /** Returns the infrastructure provider selected for a channel. */
+  getProviderName(channel: NotificationChannelCode): string {
+    return this._senderRegistry.get(channel).providerName;
+  }
 
   /**
    * Sends a notification using the strategy registered for its channel.
