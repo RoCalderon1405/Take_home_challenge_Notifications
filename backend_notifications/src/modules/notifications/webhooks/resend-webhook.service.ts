@@ -43,7 +43,7 @@ interface ResendEventMapping {
  */
 @Injectable()
 export class ResendWebhookService {
-  private readonly resend = new Resend();
+  private resend?: Resend;
 
   constructor(
     private readonly configService: ConfigService,
@@ -68,7 +68,7 @@ export class ResendWebhookService {
     let verified: unknown;
 
     try {
-      verified = this.resend.webhooks.verify({
+      verified = this.getClient().webhooks.verify({
         payload,
         headers: {
           id: headers.id,
@@ -210,5 +210,17 @@ export class ResendWebhookService {
 
   private readString(value: unknown): string | null {
     return typeof value === 'string' && value.length > 0 ? value : null;
+  }
+
+  private getClient(): Resend {
+    if (this.resend) {
+      return this.resend;
+    }
+
+    const apiKey = this.configService.getOrThrow<string>('RESEND_API_KEY');
+
+    this.resend = new Resend(apiKey);
+
+    return this.resend;
   }
 }

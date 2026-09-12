@@ -28,6 +28,7 @@ describe('ResendWebhookService', () => {
 
   const configServiceMock = {
     get: jest.fn(),
+    getOrThrow: jest.fn(),
   };
 
   const trackingServiceMock = {
@@ -37,6 +38,7 @@ describe('ResendWebhookService', () => {
   let service: ResendWebhookService;
 
   beforeEach(() => {
+    configServiceMock.getOrThrow.mockReturnValue('re_test_api_key');
     jest.clearAllMocks();
 
     verifyMock.mockReset();
