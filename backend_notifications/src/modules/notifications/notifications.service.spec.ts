@@ -5,6 +5,7 @@ import { PrismaErrorCode, PrismaErrorHandler } from '@app/common/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationMapper } from './mappers';
 import { NotificationChannelCode, NotificationStatus } from './models';
+import { NotificationSortBy, SortDirection } from './request';
 import { NotificationsService } from './notifications.service';
 import { NotificationResponseDto } from './response';
 
@@ -12,9 +13,11 @@ describe('NotificationsService', () => {
   let service: NotificationsService;
 
   const prismaServiceMock = {
+    $transaction: jest.fn(),
     notification: {
       create: jest.fn(),
       findMany: jest.fn(),
+      count: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
@@ -35,6 +38,7 @@ describe('NotificationsService', () => {
     sentAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    deliveredAt: null,
   };
 
   beforeEach(() => {
@@ -119,19 +123,47 @@ describe('NotificationsService', () => {
   });
 
   describe('findAllByUser', () => {
-    it('should return only notifications requested for the authenticated user', async () => {
-      prismaServiceMock.notification.findMany.mockResolvedValue([
-        {
-          id: notificationResponse.id,
-        },
+    it('should paginate, filter, search and sort notifications owned by the user', async () => {
+      const persistedNotification = {
+        id: notificationResponse.id,
+      };
+
+      prismaServiceMock.notification.findMany.mockReturnValue(
+        'find-many-operation',
+      );
+      prismaServiceMock.notification.count.mockReturnValue('count-operation');
+      prismaServiceMock.$transaction.mockResolvedValue([
+        [persistedNotification],
+        21,
       ]);
 
-      const result = await service.findAllByUser('user-id');
+      const query = {
+        page: 2,
+        pageSize: 10,
+        sortBy: NotificationSortBy.TITLE,
+        sortDirection: SortDirection.ASC,
+        status: NotificationStatus.SENT,
+        channel: NotificationChannelCode.EMAIL,
+        search: 'welcome',
+      };
+
+      const result = await service.findAllByUser('user-id', query);
+
+      const expectedWhere = {
+        userId: 'user-id',
+        status: NotificationStatus.SENT,
+        channel: {
+          code: NotificationChannelCode.EMAIL,
+        },
+        OR: [
+          { title: { contains: 'welcome', mode: 'insensitive' } },
+          { content: { contains: 'welcome', mode: 'insensitive' } },
+          { recipient: { contains: 'welcome', mode: 'insensitive' } },
+        ],
+      };
 
       expect(prismaServiceMock.notification.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: 'user-id',
-        },
+        where: expectedWhere,
         include: {
           channel: {
             select: {
@@ -139,12 +171,72 @@ describe('NotificationsService', () => {
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { title: SortDirection.ASC },
+        skip: 10,
+        take: 10,
       });
 
-      expect(result).toEqual([notificationResponse]);
+      expect(prismaServiceMock.notification.count).toHaveBeenCalledWith({
+        where: expectedWhere,
+      });
+
+      expect(prismaServiceMock.$transaction).toHaveBeenCalledWith([
+        'find-many-operation',
+        'count-operation',
+      ]);
+
+      expect(result).toEqual({
+        items: [notificationResponse],
+        pagination: {
+          page: 2,
+          pageSize: 10,
+          totalItems: 21,
+          totalPages: 3,
+          hasNextPage: true,
+          hasPreviousPage: true,
+        },
+      });
+    });
+
+    it('should apply defaults and return empty pagination metadata when there are no notifications', async () => {
+      prismaServiceMock.notification.findMany.mockReturnValue(
+        'find-many-operation',
+      );
+      prismaServiceMock.notification.count.mockReturnValue('count-operation');
+      prismaServiceMock.$transaction.mockResolvedValue([[], 0]);
+
+      const result = await service.findAllByUser('user-id', {
+        page: 1,
+        pageSize: 20,
+        sortBy: NotificationSortBy.CREATED_AT,
+        sortDirection: SortDirection.DESC,
+      });
+
+      expect(prismaServiceMock.notification.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-id' },
+        include: {
+          channel: {
+            select: {
+              code: true,
+            },
+          },
+        },
+        orderBy: { createdAt: SortDirection.DESC },
+        skip: 0,
+        take: 20,
+      });
+
+      expect(result).toEqual({
+        items: [],
+        pagination: {
+          page: 1,
+          pageSize: 20,
+          totalItems: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      });
     });
   });
 

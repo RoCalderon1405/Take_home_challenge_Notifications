@@ -229,7 +229,7 @@ Bearer authentication is required except registration and authentication entry p
 | `GET` | `/api/auth/google/callback` | Google OAuth callback; returns application JWT |
 | `GET` | `/api/auth/me` | Current authenticated user |
 | `POST` | `/api/notifications` | Create notification and automatically queue its first delivery |
-| `GET` | `/api/notifications` | List owned notifications |
+| `GET` | `/api/notifications` | Paginated owner-scoped notifications with search, filters and sorting |
 | `GET` | `/api/notifications/:id` | Owned notification detail |
 | `PATCH` | `/api/notifications/:id` | Update owned notification |
 | `POST` | `/api/notifications/:id/send` | Explicitly queue/retry an owned notification |
@@ -247,6 +247,14 @@ Example notification:
 ```
 
 `channel` can be `EMAIL`, `SMS` or `PUSH`. Ownership and delivery state are controlled by the backend.
+
+The notification list endpoint supports server-side pagination, sorting and filters:
+
+```text
+GET /api/notifications?page=1&pageSize=20&sortBy=createdAt&sortDirection=desc&status=SENT&channel=EMAIL&search=welcome
+```
+
+`page` is one-based, `pageSize` defaults to `20` and is capped at `100`. Search is case-insensitive over `title`, `content` and `recipient`. The response contains `items` plus pagination metadata (`page`, `pageSize`, `totalItems`, `totalPages`, `hasNextPage`, `hasPreviousPage`).
 
 ### Provider callback endpoints
 

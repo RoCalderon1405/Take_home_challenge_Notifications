@@ -10,6 +10,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
@@ -19,6 +20,7 @@ import {
   NotificationDeliveryResponseDto,
   NotificationResponseDto,
   NotificationQueuedResponseDto,
+  PaginatedNotificationsResponseDto,
 } from '../response';
 
 const NOTIFICATION_ID_EXAMPLE = '70a7ad1a-8871-4b94-afca-201e8f6f0225';
@@ -107,13 +109,69 @@ export function ApiGetNotifications() {
     ApiOperation({
       summary: 'List notifications',
       description:
-        'Returns all notifications owned by the authenticated user, ordered from newest to oldest.',
+        'Returns an owner-scoped paginated notification collection with optional search, status/channel filters and sorting.',
+    }),
+
+    ApiQuery({
+      name: 'page',
+      required: false,
+      type: Number,
+      example: 1,
+      description: 'One-based page number. Defaults to 1.',
+    }),
+    ApiQuery({
+      name: 'pageSize',
+      required: false,
+      type: Number,
+      example: 20,
+      description:
+        'Number of items per page. Defaults to 20 and is capped at 100.',
+    }),
+    ApiQuery({
+      name: 'sortBy',
+      required: false,
+      enum: [
+        'createdAt',
+        'updatedAt',
+        'title',
+        'status',
+        'channel',
+        'recipient',
+      ],
+      example: 'createdAt',
+      description: 'Allow-listed notification field used for sorting.',
+    }),
+    ApiQuery({
+      name: 'sortDirection',
+      required: false,
+      enum: ['asc', 'desc'],
+      example: 'desc',
+      description: 'Sort direction.',
+    }),
+    ApiQuery({
+      name: 'status',
+      required: false,
+      enum: ['PENDING', 'PROCESSING', 'SENT', 'DELIVERED', 'FAILED'],
+      description: 'Optional notification status filter.',
+    }),
+    ApiQuery({
+      name: 'channel',
+      required: false,
+      enum: ['EMAIL', 'SMS', 'PUSH'],
+      description: 'Optional notification channel filter.',
+    }),
+    ApiQuery({
+      name: 'search',
+      required: false,
+      type: String,
+      example: 'welcome',
+      description:
+        'Case-insensitive text search over title, content and recipient.',
     }),
 
     ApiOkResponse({
       description: 'Notifications retrieved successfully.',
-      type: NotificationResponseDto,
-      isArray: true,
+      type: PaginatedNotificationsResponseDto,
     }),
   );
 }
