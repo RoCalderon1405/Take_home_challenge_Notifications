@@ -7,9 +7,11 @@ import { CurrentUser } from './decorators';
 import {
   ApiAuthController,
   ApiGetCurrentUser,
+  ApiGoogleCallback,
+  ApiGoogleLogin,
   ApiLogin,
 } from './docs/auth-swagger.decorators';
-import { JwtAuthGuard, LocalAuthGuard } from './guards';
+import { GoogleAuthGuard, JwtAuthGuard, LocalAuthGuard } from './guards';
 import { AuthService } from './auth.service';
 
 /**
@@ -22,12 +24,6 @@ export class AuthController {
 
   /**
    * Authenticates a user using email and password.
-   *
-   * LocalAuthGuard validates the credentials through Passport and places
-   * the authenticated user in request.user before this handler executes.
-   *
-   * @param request Express request containing the authenticated user.
-   * @returns Authentication response containing the user and access token.
    */
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -40,10 +36,35 @@ export class AuthController {
   }
 
   /**
-   * Returns the currently authenticated user.
+   * Redirects the browser to Google's OAuth 2.0 consent/login page.
    *
-   * @param user User authenticated through Passport JWT.
-   * @returns The currently authenticated user.
+   * The GoogleAuthGuard performs the redirect before this handler executes.
+   */
+  @UseGuards(GoogleAuthGuard)
+  @Get('google')
+  @ApiGoogleLogin()
+  googleLogin(): void {
+    // Passport redirects before normal response handling reaches this point.
+  }
+
+  /**
+   * Completes the Google OAuth 2.0 flow and returns the application's JWT.
+   *
+   * Passport resolves the Google account to a UserModel and stores it in
+   * request.user before this handler executes.
+   */
+  @UseGuards(GoogleAuthGuard)
+  @Get('google/callback')
+  @ApiGoogleCallback()
+  async googleCallback(
+    @Req()
+    request: Request & { user: UserModel },
+  ) {
+    return await this._authService.login(request.user);
+  }
+
+  /**
+   * Returns the currently authenticated user.
    */
   @UseGuards(JwtAuthGuard)
   @Get('me')

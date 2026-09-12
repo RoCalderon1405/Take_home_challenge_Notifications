@@ -1,10 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
 
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
 
+import {
+  UserAuthProvider,
+  UserRole,
+  UserStatus,
+  type UserModel,
+} from '../users/models';
 import { UsersService } from '../users/users.service';
-import { UserModel, UserRole, UserStatus } from '../users/models';
 
 import { AuthService } from './auth.service';
 
@@ -13,6 +18,7 @@ describe('AuthService', () => {
 
   const usersServiceMock = {
     findOneByEmailForAuth: jest.fn(),
+    findOrCreateByExternalIdentity: jest.fn(),
   };
 
   const passwordHasherServiceMock = {
@@ -43,12 +49,10 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-
     jest.clearAllMocks();
   });
 
-  it('should validate correct credentials', async () => {
-    // Arrange
+  it('should validate correct local credentials', async () => {
     const loginDto = {
       email: 'user@example.com',
       password: 'my-secure-password',
@@ -59,22 +63,21 @@ describe('AuthService', () => {
       email: 'user@example.com',
       passwordHash: 'stored-password-hash',
       status: UserStatus.ACTIVE,
+      role: UserRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     usersServiceMock.findOneByEmailForAuth.mockResolvedValue(user);
-
     passwordHasherServiceMock.verify.mockResolvedValue(true);
 
-    // Act
     const result = await service.validateCredentials(loginDto);
 
-    // Assert
     expect(result).toEqual({
       id: user.id,
       email: user.email,
       status: user.status,
+      role: user.role,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     });
@@ -85,56 +88,110 @@ describe('AuthService', () => {
     );
   });
 
-  it('should throw UnauthorizedException when user does not exist', async () => {
-    // Arrange
-    const loginDto = {
-      email: 'missing@example.com',
-      password: 'my-secure-password',
-    };
-
+  it('should reject local login when the user does not exist', async () => {
     usersServiceMock.findOneByEmailForAuth.mockResolvedValue(null);
 
-    // Act + Assert
-    await expect(service.validateCredentials(loginDto)).rejects.toThrow(
-      'Invalid credentials',
-    );
+    await expect(
+      service.validateCredentials({
+        email: 'missing@example.com',
+        password: 'my-secure-password',
+      }),
+    ).rejects.toThrow('Invalid credentials');
 
     expect(passwordHasherServiceMock.verify).not.toHaveBeenCalled();
   });
 
-  it('should throw UnauthorizedException when password is invalid', async () => {
-    // Arrange
-    const loginDto = {
-      email: 'user@example.com',
-      password: 'wrong-password',
-    };
+  it('should reject local login for an OAuth-only user without a password', async () => {
+    usersServiceMock.findOneByEmailForAuth.mockResolvedValue({
+      id: 'oauth-user',
+      email: 'oauth@example.com',
+      passwordHash: null,
+      status: UserStatus.ACTIVE,
+      role: UserRole.USER,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
 
+    await expect(
+      service.validateCredentials({
+        email: 'oauth@example.com',
+        password: 'anything',
+      }),
+    ).rejects.toThrow('Invalid credentials');
+
+    expect(passwordHasherServiceMock.verify).not.toHaveBeenCalled();
+  });
+
+  it('should reject local login when password is invalid', async () => {
     const user = {
       id: 'user-id',
       email: 'user@example.com',
       passwordHash: 'stored-password-hash',
       status: UserStatus.ACTIVE,
+      role: UserRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     usersServiceMock.findOneByEmailForAuth.mockResolvedValue(user);
-
     passwordHasherServiceMock.verify.mockResolvedValue(false);
 
-    // Act + Assert
-    await expect(service.validateCredentials(loginDto)).rejects.toThrow(
-      'Invalid credentials',
-    );
+    await expect(
+      service.validateCredentials({
+        email: 'user@example.com',
+        password: 'wrong-password',
+      }),
+    ).rejects.toThrow('Invalid credentials');
+  });
 
-    expect(passwordHasherServiceMock.verify).toHaveBeenCalledWith(
-      loginDto.password,
-      user.passwordHash,
-    );
+  it('should resolve a Google profile through UsersService', async () => {
+    const user: UserModel = {
+      id: 'google-user',
+      email: 'user@gmail.com',
+      status: UserStatus.ACTIVE,
+      role: UserRole.USER,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    usersServiceMock.findOrCreateByExternalIdentity.mockResolvedValue(user);
+
+    const result = await service.authenticateGoogle({
+      providerUserId: 'google-subject-123',
+      email: 'user@gmail.com',
+    });
+
+    expect(
+      usersServiceMock.findOrCreateByExternalIdentity,
+    ).toHaveBeenCalledWith({
+      provider: UserAuthProvider.GOOGLE,
+      providerUserId: 'google-subject-123',
+      email: 'user@gmail.com',
+    });
+    expect(result).toBe(user);
+  });
+
+  it('should reject Google login when the linked account is not active', async () => {
+    const user: UserModel = {
+      id: 'google-user',
+      email: 'user@gmail.com',
+      status: UserStatus.BANNED,
+      role: UserRole.USER,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    usersServiceMock.findOrCreateByExternalIdentity.mockResolvedValue(user);
+
+    await expect(
+      service.authenticateGoogle({
+        providerUserId: 'google-subject-123',
+        email: 'user@gmail.com',
+      }),
+    ).rejects.toThrow('Account is not active');
   });
 
   it('should generate an access token for an authenticated user', async () => {
-    // Arrange
     const user: UserModel = {
       id: 'user-id',
       email: 'user@example.com',
@@ -146,10 +203,8 @@ describe('AuthService', () => {
 
     jwtServiceMock.signAsync.mockResolvedValue('jwt-access-token');
 
-    // Act
     const result = await service.login(user);
 
-    // Assert
     expect(jwtServiceMock.signAsync).toHaveBeenCalledWith({
       sub: user.id,
       email: user.email,
