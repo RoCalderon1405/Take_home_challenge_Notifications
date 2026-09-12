@@ -19,9 +19,9 @@ export interface UserModel {
 /**
  * Represents a user during credential-based authentication.
  *
- * This model extends the safe application model with the password hash
- * required to verify a submitted password.
+ * OAuth-only accounts have no local password, therefore passwordHash is
+ * nullable and local authentication must reject those accounts cleanly.
  */
 export interface UserAuthModel extends UserModel {
-  passwordHash: string;
+  passwordHash: string | null;
 }

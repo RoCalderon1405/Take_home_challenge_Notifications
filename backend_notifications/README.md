@@ -9,7 +9,7 @@ Global prefix: `/api`. Swagger: `/api/docs`.
 - NestJS 11 + TypeScript
 - Prisma 7 + PostgreSQL
 - Redis for cache and BullMQ
-- Passport Local + JWT, Argon2 and roles `USER` / `ADMIN`
+- Passport Local + Google OAuth 2.0 + JWT, Argon2 and roles `USER` / `ADMIN`
 - Swagger
 - Jest unit and E2E tests
 - Real provider adapters: Resend (Email), Twilio (SMS), Firebase Cloud Messaging HTTP v1 (Push)
@@ -40,6 +40,55 @@ NotificationSenderStrategy
 A strategy represents the **channel** (`EMAIL`, `SMS`, `PUSH`). A provider represents the **delivery infrastructure** used by that channel. Provider interfaces are compile-time TypeScript contracts; `Symbol` tokens such as `EMAIL_PROVIDER` are the runtime Nest dependency-injection keys.
 
 This separation allows a provider to be replaced without changing the queue, dispatcher, delivery orchestration or controller.
+
+## Authentication modes
+
+The backend supports both local credentials and Google OAuth 2.0. Both flows end by issuing the same application JWT, so protected endpoints do not need to know which login method was used.
+
+### Local credentials
+
+`POST /api/auth/login` validates email/password through Passport Local and returns the application JWT.
+
+### Google OAuth 2.0
+
+Google login is optional and disabled by default. Enable it only after creating OAuth credentials in Google Cloud:
+
+```env
+GOOGLE_OAUTH_ENABLED=true
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+```
+
+The callback URL must exactly match an **Authorized redirect URI** configured for the Google OAuth client.
+
+Flow:
+
+```text
+GET /api/auth/google
+        ↓
+Google login / consent
+        ↓
+GET /api/auth/google/callback
+        ↓
+GoogleStrategy
+        ↓
+AuthService.authenticateGoogle
+        ↓
+UsersService.findOrCreateByExternalIdentity
+        ↓
+existing identity → existing user
+existing email    → link Google identity
+new email         → create OAuth-only user
+        ↓
+AuthService.login
+        ↓
+application JWT
+```
+
+Google access and refresh tokens are not persisted because this project uses Google only for authentication. The redirect flow uses a short-lived, HMAC-signed `state` value to protect the OAuth round trip without introducing server-side HTTP sessions. External identities are stored separately in `user_identities`, which keeps the user model ready for additional providers without adding provider-specific columns to `users`.
+
+OAuth-only users have a nullable `password_hash`; local login rejects those accounts unless a local password is added in a future account-management flow.
 
 ## Provider modes
 
@@ -89,13 +138,15 @@ FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY----
 
 `FirebasePushProvider` uses Firebase Cloud Messaging HTTP v1. It signs a service-account JWT, exchanges it for a short-lived OAuth 2.0 access token and caches that token until shortly before expiration. The notification recipient is an FCM registration token.
 
-See `.env.providers.example` for a provider-only template.
+See `.env.providers.example` for notification-provider and Google OAuth integration variables.
 
 ## Configuration validation
 
-Provider credentials are conditional:
+External integration credentials are conditional:
 
-- Console mode does not require external credentials.
+- `GOOGLE_OAUTH_ENABLED=false` does not require Google credentials.
+- `GOOGLE_OAUTH_ENABLED=true` requires the Google client id, client secret and callback URL.
+- Console notification mode does not require external provider credentials.
 - `EMAIL_PROVIDER=resend` requires `RESEND_API_KEY`, `EMAIL_FROM` and `RESEND_WEBHOOK_SECRET`.
 - `SMS_PROVIDER=twilio` requires the Account SID, API Key SID/Secret, primary Auth Token, sender number and `PUBLIC_API_BASE_URL`.
 - `PUSH_PROVIDER=firebase` requires project ID, service-account email and private key.
@@ -106,7 +157,7 @@ Invalid real-provider configuration prevents the application from starting inste
 
 | Module | Responsibility |
 | --- | --- |
-| `auth` | Login, JWT and `/auth/me` |
+| `auth` | Local login, Google OAuth 2.0, JWT and `/auth/me` |
 | `users` | Registration and admin user operations |
 | `notifications` | Owner-scoped CRUD and send endpoint |
 | `notifications/queue` | BullMQ producer and processor |
@@ -130,6 +181,10 @@ Core variables:
 | `PASSWORD_PEPPER` | Password pepper (minimum 32 chars) |
 | `JWT_SECRET` | JWT signing secret (minimum 32 chars) |
 | `JWT_EXPIRES_IN_SECONDS` | Access-token TTL |
+| `GOOGLE_OAUTH_ENABLED` | Enables/disables Google login (`false` by default) |
+| `GOOGLE_CLIENT_ID` | Google OAuth client id |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GOOGLE_CALLBACK_URL` | Backend callback registered in Google Cloud |
 
 Provider variables are documented in the Provider modes section above.
 
@@ -164,12 +219,14 @@ npm run docs:serve
 
 ## Main endpoints
 
-Bearer authentication is required except registration and login.
+Bearer authentication is required except registration and authentication entry points.
 
 | Method | Path | Description |
 | --- | --- | --- |
 | `POST` | `/api/users` | Register |
-| `POST` | `/api/auth/login` | Login |
+| `POST` | `/api/auth/login` | Local email/password login |
+| `GET` | `/api/auth/google` | Start Google OAuth login |
+| `GET` | `/api/auth/google/callback` | Google OAuth callback; returns application JWT |
 | `GET` | `/api/auth/me` | Current authenticated user |
 | `POST` | `/api/notifications` | Create notification and automatically queue its first delivery |
 | `GET` | `/api/notifications` | List owned notifications |

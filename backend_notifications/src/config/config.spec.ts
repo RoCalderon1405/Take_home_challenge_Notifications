@@ -199,3 +199,39 @@ describe('environment provider configuration', () => {
     expect(result.data.PUBLIC_API_BASE_URL).toBe('https://api.example.com');
   });
 });
+
+// Google OAuth configuration is optional until explicitly enabled.
+describe('Google OAuth environment configuration', () => {
+  it('should default Google OAuth to disabled', () => {
+    const result = envSchema.safeParse(baseEnv);
+
+    expect(result.success).toBe(true);
+
+    if (!result.success) {
+      throw new Error('Expected environment parsing to succeed');
+    }
+
+    expect(result.data.GOOGLE_OAUTH_ENABLED).toBe(false);
+  });
+
+  it('should require Google credentials when Google OAuth is enabled', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      GOOGLE_OAUTH_ENABLED: 'true',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept Google OAuth when all required values exist', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      GOOGLE_OAUTH_ENABLED: 'true',
+      GOOGLE_CLIENT_ID: 'google-client-id',
+      GOOGLE_CLIENT_SECRET: 'google-client-secret',
+      GOOGLE_CALLBACK_URL: 'http://localhost:3000/api/auth/google/callback',
+    });
+
+    expect(result.success).toBe(true);
+  });
+});

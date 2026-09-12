@@ -9,13 +9,14 @@ import { UsersModule } from '../users/users.module';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtStrategy, LocalStrategy } from './strategies';
+import { GoogleAuthGuard, JwtAuthGuard, LocalAuthGuard } from './guards';
+import { GoogleStrategy, JwtStrategy, LocalStrategy } from './strategies';
 
 /**
  * Provides authentication capabilities for the application.
  *
- * It configures Passport strategies for credential-based authentication
- * and JWT-based authentication.
+ * It configures Passport strategies for local credentials, Google OAuth 2.0
+ * and JWT-based authorization.
  */
 @Module({
   imports: [
@@ -35,7 +36,15 @@ import { JwtStrategy, LocalStrategy } from './strategies';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    LocalAuthGuard,
+    JwtAuthGuard,
+    GoogleAuthGuard,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

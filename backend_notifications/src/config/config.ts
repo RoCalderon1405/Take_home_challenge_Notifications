@@ -43,6 +43,25 @@ export const envSchema = z
       .transform(Number)
       .pipe(z.number().int().positive()),
 
+    GOOGLE_OAUTH_ENABLED: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+
+    GOOGLE_CLIENT_ID: providerCredential('GOOGLE_CLIENT_ID is required'),
+
+    GOOGLE_CLIENT_SECRET: providerCredential(
+      'GOOGLE_CLIENT_SECRET is required',
+    ),
+
+    GOOGLE_CALLBACK_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z
+        .string()
+        .url({ message: 'GOOGLE_CALLBACK_URL must be a valid URL' })
+        .optional(),
+    ),
+
     EMAIL_PROVIDER: z
       .enum(['console', 'development', 'resend'])
       .default('console')
@@ -97,6 +116,29 @@ export const envSchema = z
   })
   .loose()
   .superRefine((config, ctx) => {
+    if (config.GOOGLE_OAUTH_ENABLED) {
+      addRequiredIssue(
+        ctx,
+        config.GOOGLE_CLIENT_ID,
+        'GOOGLE_CLIENT_ID',
+        'google oauth',
+      );
+
+      addRequiredIssue(
+        ctx,
+        config.GOOGLE_CLIENT_SECRET,
+        'GOOGLE_CLIENT_SECRET',
+        'google oauth',
+      );
+
+      addRequiredIssue(
+        ctx,
+        config.GOOGLE_CALLBACK_URL,
+        'GOOGLE_CALLBACK_URL',
+        'google oauth',
+      );
+    }
+
     if (config.EMAIL_PROVIDER === 'resend') {
       addRequiredIssue(ctx, config.RESEND_API_KEY, 'RESEND_API_KEY', 'resend');
 

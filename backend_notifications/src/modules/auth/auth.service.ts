@@ -3,15 +3,16 @@ import { JwtService } from '@nestjs/jwt';
 
 import { PasswordHaserService } from '@app/common/security/password-hasher.service';
 
-import { UsersService } from '../users/users.service';
 import { UserMapper } from '../users/mappers';
-import { UserModel } from '../users/models';
+import { UserAuthProvider, UserStatus, type UserModel } from '../users/models';
+import { UsersService } from '../users/users.service';
 
+import type { GoogleProfileModel } from './models';
 import { LoginDto } from './request';
 
 /**
- * Handles authentication operations such as credential validation
- * and access-token generation.
+ * Handles authentication operations such as credential validation, Google
+ * account authentication and access-token generation.
  */
 @Injectable()
 export class AuthService {
@@ -22,22 +23,14 @@ export class AuthService {
   ) {}
 
   /**
-   * Validates a user's credentials.
-   *
-   * Returns a safe application user model when the credentials are valid.
-   * The same unauthorized response is used for unknown users and invalid
-   * passwords to avoid exposing registered email addresses.
-   *
-   * @param loginDto Credentials provided by the client.
-   * @returns The authenticated user without sensitive authentication data.
-   * @throws UnauthorizedException When the credentials are invalid.
+   * Validates a user's local email/password credentials.
    */
   async validateCredentials(loginDto: LoginDto): Promise<UserModel> {
     const { email, password } = loginDto;
 
     const user = await this._userService.findOneByEmailForAuth(email);
 
-    if (!user) {
+    if (!user?.passwordHash) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -50,18 +43,43 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return UserMapper.toModel(user);
+    const userModel = UserMapper.toModel(user);
+
+    this.assertActive(userModel);
+
+    return userModel;
   }
 
   /**
-   * Creates an access token for an already authenticated user.
+   * Resolves a Google account to an application user.
    *
-   * The JWT payload contains only non-sensitive identification data.
-   * JWT payloads are signed but not encrypted, so sensitive authentication
-   * information must never be included.
-   *
-   * @param user Authenticated user provided by Passport.
-   * @returns The authenticated user and its access token.
+   * Existing Google identities are reused. If the Google email already belongs
+   * to a local account, the identity is linked to that account. Otherwise an
+   * OAuth-only user is created with no local password.
+   */
+  async authenticateGoogle(profile: GoogleProfileModel): Promise<UserModel> {
+    const user = await this._userService.findOrCreateByExternalIdentity({
+      provider: UserAuthProvider.GOOGLE,
+      providerUserId: profile.providerUserId,
+      email: profile.email,
+    });
+
+    this.assertActive(user);
+
+    return user;
+  }
+
+  /**
+   * Rejects disabled accounts before a token is issued.
+   */
+  private assertActive(user: UserModel): void {
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Account is not active');
+    }
+  }
+
+  /**
+   * Creates an application JWT for an already authenticated user.
    */
   async login(user: UserModel) {
     const payload = {
@@ -70,6 +88,7 @@ export class AuthService {
     };
 
     const accessToken = await this._jwtService.signAsync(payload);
+
     return {
       user,
       accessToken,
