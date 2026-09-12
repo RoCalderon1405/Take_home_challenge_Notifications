@@ -8,6 +8,8 @@ import type { SmsProvider, SmsProviderResult } from './sms-provider';
  */
 @Injectable()
 export class ConsoleSmsProvider implements SmsProvider {
+  readonly name = 'console-sms';
+
   private readonly logger = new Logger(ConsoleSmsProvider.name);
 
   send(input: NotificationSendInput): Promise<SmsProviderResult> {
@@ -18,7 +20,7 @@ export class ConsoleSmsProvider implements SmsProvider {
     );
 
     return Promise.resolve({
-      provider: 'console-sms',
+      provider: this.name,
       providerMessageId: `console-sms-${notificationId}-${Date.now()}`,
       providerResponse: {
         accepted: true,

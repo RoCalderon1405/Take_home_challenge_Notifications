@@ -59,20 +59,24 @@ To enable real delivery, select the provider explicitly and configure its creden
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_xxxxxxxxx
 EMAIL_FROM=Notifications <notifications@your-domain.com>
+RESEND_WEBHOOK_SECRET=whsec_xxxxxxxxx
 ```
 
-`ResendEmailProvider` uses the official `resend` Node.js package.
+`ResendEmailProvider` uses the official `resend` Node.js package. Delivery events are verified with `RESEND_WEBHOOK_SECRET` at `/api/webhooks/resend` and persisted in the delivery timeline.
 
 ### SMS — Twilio
 
 ```env
 SMS_PROVIDER=twilio
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_FROM_NUMBER=+15551234567
+PUBLIC_API_BASE_URL=https://api.example.com
 ```
 
-`TwilioSmsProvider` calls Twilio's Messaging REST API. The notification recipient should be an E.164 phone number.
+`TwilioSmsProvider` uses Twilio's official Node.js SDK with API Key authentication. Every SMS includes a `StatusCallback` pointing to `${PUBLIC_API_BASE_URL}/api/webhooks/twilio/status`; callbacks are validated with `TWILIO_AUTH_TOKEN`. The notification recipient should be an E.164 phone number.
 
 ### Push — Firebase Cloud Messaging
 
@@ -92,8 +96,8 @@ See `.env.providers.example` for a provider-only template.
 Provider credentials are conditional:
 
 - Console mode does not require external credentials.
-- `EMAIL_PROVIDER=resend` requires `RESEND_API_KEY` and `EMAIL_FROM`.
-- `SMS_PROVIDER=twilio` requires the Twilio SID, auth token and sender number.
+- `EMAIL_PROVIDER=resend` requires `RESEND_API_KEY`, `EMAIL_FROM` and `RESEND_WEBHOOK_SECRET`.
+- `SMS_PROVIDER=twilio` requires the Account SID, API Key SID/Secret, primary Auth Token, sender number and `PUBLIC_API_BASE_URL`.
 - `PUSH_PROVIDER=firebase` requires project ID, service-account email and private key.
 
 Invalid real-provider configuration prevents the application from starting instead of silently falling back to a fake delivery mechanism.
@@ -152,7 +156,11 @@ npm run lint:check
 npm run test:unit
 npm run test:cov
 npm run test:e2e
+npm run docs
+npm run docs:serve
 ```
+
+`npm run docs` generates Compodoc output under `documentation/`. The generated directory is intentionally ignored by Git and Docker; the source JSDoc and Compodoc configuration remain versioned.
 
 ## Main endpoints
 
@@ -163,11 +171,11 @@ Bearer authentication is required except registration and login.
 | `POST` | `/api/users` | Register |
 | `POST` | `/api/auth/login` | Login |
 | `GET` | `/api/auth/me` | Current authenticated user |
-| `POST` | `/api/notifications` | Create notification |
+| `POST` | `/api/notifications` | Create notification and automatically queue its first delivery |
 | `GET` | `/api/notifications` | List owned notifications |
 | `GET` | `/api/notifications/:id` | Owned notification detail |
 | `PATCH` | `/api/notifications/:id` | Update owned notification |
-| `POST` | `/api/notifications/:id/send` | Queue asynchronous delivery |
+| `POST` | `/api/notifications/:id/send` | Explicitly queue/retry an owned notification |
 | `DELETE` | `/api/notifications/:id` | Delete owned notification |
 
 Example notification:
@@ -183,17 +191,27 @@ Example notification:
 
 `channel` can be `EMAIL`, `SMS` or `PUSH`. Ownership and delivery state are controlled by the backend.
 
+### Provider callback endpoints
+
+Provider callbacks are intentionally excluded from Swagger because they are signed machine-to-machine endpoints rather than frontend-facing API operations.
+
+| Method | Path | Provider | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/webhooks/resend` | Resend | Receive and verify email delivery events |
+| `POST` | `/api/webhooks/twilio/status` | Twilio | Receive and verify SMS status callbacks |
+
 ## Asynchronous delivery
 
-1. `POST /api/notifications/:id/send` verifies ownership and enqueues the job.
+1. `POST /api/notifications` persists the notification and immediately enqueues its first delivery job.
 2. BullMQ stores and processes the job through Redis.
 3. `NotificationDeliveryService` creates a delivery attempt and marks the notification `PROCESSING`.
 4. The dispatcher resolves the channel strategy.
 5. The strategy delegates to the configured provider.
-6. Successful sends persist `SENT`, provider details and `sentAt`.
-7. Provider failures persist `FAILED` and are rethrown so BullMQ can apply its retry policy.
+6. Successful provider acceptance persists `SENT`, provider details and `sentAt`.
+7. Resend/Twilio webhooks can later advance tracked deliveries to `DELIVERED` or `FAILED`.
+8. Provider failures persist `FAILED` and are rethrown so BullMQ can apply its retry policy.
 
-Delivery attempts are persisted independently from the current notification state.
+`POST /api/notifications/:id/send` remains available as an explicit owner-scoped queue/retry operation. Delivery attempts are persisted independently from the current notification state.
 
 ## Tests
 
@@ -206,4 +224,4 @@ npm run test:unit
 npm run test:e2e
 ```
 
-To manually verify physical delivery, select one real provider in `.env`, restart the backend, create a notification for that channel and call its `/send` endpoint.
+To manually verify physical delivery, select one real provider in `.env`, restart the backend and create a notification for that channel. Creation automatically queues the first delivery; `/send` remains available for an explicit retry.

@@ -13,5 +13,7 @@ export interface PushProviderResult {
  * Infrastructure contract used by the Push notification strategy.
  */
 export interface PushProvider {
+  readonly name: string;
+
   send(input: NotificationSendInput): Promise<PushProviderResult>;
 }

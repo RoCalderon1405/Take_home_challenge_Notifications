@@ -21,6 +21,10 @@ export class SmsSenderStrategy implements NotificationSenderStrategy {
     private readonly smsProvider: SmsProvider,
   ) {}
 
+  get providerName(): string {
+    return this.smsProvider.name;
+  }
+
   send(input: NotificationSendInput): Promise<NotificationSendResult> {
     return this.smsProvider.send(input);
   }

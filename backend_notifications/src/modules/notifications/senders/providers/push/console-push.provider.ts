@@ -8,6 +8,8 @@ import type { PushProvider, PushProviderResult } from './push-provider';
  */
 @Injectable()
 export class ConsolePushProvider implements PushProvider {
+  readonly name = 'console-push';
+
   private readonly logger = new Logger(ConsolePushProvider.name);
 
   send(input: NotificationSendInput): Promise<PushProviderResult> {
@@ -18,7 +20,7 @@ export class ConsolePushProvider implements PushProvider {
     );
 
     return Promise.resolve({
-      provider: 'console-push',
+      provider: this.name,
       providerMessageId: `console-push-${notificationId}-${Date.now()}`,
       providerResponse: {
         accepted: true,

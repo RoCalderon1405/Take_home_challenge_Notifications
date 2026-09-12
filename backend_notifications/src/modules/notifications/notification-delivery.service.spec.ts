@@ -35,6 +35,7 @@ describe('NotificationDeliveryService', () => {
     status: NotificationStatus.PENDING,
     lastError: null,
     sentAt: null,
+    deliveredAt: null,
     createdAt: fixedDate,
     updatedAt: fixedDate,
     channel: {
@@ -81,6 +82,7 @@ describe('NotificationDeliveryService', () => {
   };
 
   const dispatcherMock = {
+    getProviderName: jest.fn(),
     send: jest.fn(),
   };
 
@@ -91,6 +93,8 @@ describe('NotificationDeliveryService', () => {
 
     jest.useFakeTimers();
     jest.setSystemTime(fixedDate);
+
+    dispatcherMock.getProviderName.mockReturnValue('console-push');
 
     prismaServiceMock.$transaction.mockImplementation(
       async (operation: unknown): Promise<unknown> => {
@@ -128,6 +132,7 @@ describe('NotificationDeliveryService', () => {
       NotFoundException,
     );
 
+    expect(dispatcherMock.getProviderName).not.toHaveBeenCalled();
     expect(dispatcherMock.send).not.toHaveBeenCalled();
 
     expect(prismaServiceMock.$transaction).not.toHaveBeenCalled();
@@ -175,6 +180,7 @@ describe('NotificationDeliveryService', () => {
         notificationId,
         attemptNumber: 3,
         status: DeliveryStatus.PROCESSING,
+        provider: 'console-push',
         requestPayload: {
           channel: NotificationChannelCode.PUSH,
           recipient: 'test@example.com',
@@ -197,6 +203,10 @@ describe('NotificationDeliveryService', () => {
       },
     });
 
+    expect(dispatcherMock.getProviderName).toHaveBeenCalledWith(
+      NotificationChannelCode.PUSH,
+    );
+
     expect(dispatcherMock.send).toHaveBeenCalledWith({
       id: notificationId,
       userId,
@@ -207,6 +217,7 @@ describe('NotificationDeliveryService', () => {
       status: NotificationStatus.PENDING,
       lastError: null,
       sentAt: null,
+      deliveredAt: null,
       createdAt: fixedDate,
       updatedAt: fixedDate,
     });
@@ -218,11 +229,9 @@ describe('NotificationDeliveryService', () => {
       data: {
         status: DeliveryStatus.SENT,
         provider: 'console-push',
+        providerMessageId: 'push-message-1',
         providerResponse: {
-          providerMessageId: 'push-message-1',
-          response: {
-            accepted: true,
-          },
+          accepted: true,
         },
         errorMessage: null,
         completedAt: fixedDate,
@@ -246,7 +255,7 @@ describe('NotificationDeliveryService', () => {
 
   it('should mark the delivery and notification as failed when dispatching fails', async () => {
     const error = new NotificationProviderError(
-      'twilio',
+      'console-push',
       'Provider unavailable',
       false,
     );
@@ -280,6 +289,7 @@ describe('NotificationDeliveryService', () => {
         notificationId,
         attemptNumber: 1,
         status: DeliveryStatus.PROCESSING,
+        provider: 'console-push',
         requestPayload: {
           channel: NotificationChannelCode.PUSH,
           recipient: 'test@example.com',
@@ -297,7 +307,7 @@ describe('NotificationDeliveryService', () => {
       },
       data: {
         status: DeliveryStatus.FAILED,
-        provider: 'twilio',
+        provider: 'console-push',
         errorMessage: 'Provider unavailable',
         completedAt: fixedDate,
       },
@@ -357,6 +367,7 @@ describe('NotificationDeliveryService', () => {
         notificationId,
         attemptNumber: 5,
         status: DeliveryStatus.PROCESSING,
+        provider: 'console-push',
         requestPayload: {
           channel: NotificationChannelCode.PUSH,
           recipient: 'test@example.com',
@@ -375,6 +386,7 @@ describe('NotificationDeliveryService', () => {
         notificationId,
         attemptNumber: 6,
         status: DeliveryStatus.PROCESSING,
+        provider: 'console-push',
         requestPayload: {
           channel: NotificationChannelCode.PUSH,
           recipient: 'test@example.com',

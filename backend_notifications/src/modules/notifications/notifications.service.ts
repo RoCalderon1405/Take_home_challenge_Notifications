@@ -29,6 +29,8 @@ export class NotificationsService {
    * before the notification is stored.
    *
    * Newly created notifications rely on the database default PENDING status.
+   * The HTTP application flow queues the first delivery immediately after this
+   * persistence operation succeeds.
    *
    * @param userId Identifier of the authenticated user.
    * @param createNotificationDto Notification data supplied by the client.

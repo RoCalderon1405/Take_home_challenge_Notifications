@@ -1,24 +1,30 @@
+version: 2.1
+
 orbs:
   coveralls: coveralls/coveralls@2.2.5
-
-version: 2.1
 
 jobs:
   lint:
     docker:
       - image: cimg/node:24.18.1
+
     working_directory: ~/project/backend_notifications
+
     environment:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+
     steps:
       - checkout:
           path: ~/project
+
       - run:
           name: Install dependencies
           command: npm ci
+
       - run:
           name: Generate Prisma Client
           command: npx prisma generate
+
       - run:
           name: Run ESLint
           command: npm run lint:check
@@ -26,37 +32,110 @@ jobs:
   unit-tests:
     docker:
       - image: cimg/node:24.18.1
+
     working_directory: ~/project/backend_notifications
+
     environment:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+
     steps:
       - checkout:
           path: ~/project
+
       - run:
           name: Install dependencies
           command: npm ci
+
       - run:
           name: Generate Prisma Client
           command: npx prisma generate
+
       - run:
           name: Run unit tests
           command: npm run test:unit
 
-  build:
+  e2e:
     docker:
       - image: cimg/node:24.18.1
+
+      - image: postgres:17
+        environment:
+          POSTGRES_DB: notifications
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+
+      - image: redis:8-alpine
+
     working_directory: ~/project/backend_notifications
+
     environment:
+      PORT: "3000"
+      ALLOWED_ORIGINS: http://localhost:5173
+
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+      REDIS_URL: redis://localhost:6379
+
+      PASSWORD_PEPPER: ci-password-pepper-12345678901234567890
+      JWT_SECRET: ci-jwt-secret-123456789012345678901234567890
+      JWT_EXPIRES_IN_SECONDS: "3600"
+
+      EMAIL_PROVIDER: console
+      SMS_PROVIDER: console
+      PUSH_PROVIDER: console
+
     steps:
       - checkout:
           path: ~/project
+
       - run:
           name: Install dependencies
           command: npm ci
+
       - run:
           name: Generate Prisma Client
           command: npx prisma generate
+
+      - run:
+          name: Wait for PostgreSQL and Redis
+          command: |
+            dockerize \
+              -wait tcp://localhost:5432 \
+              -wait tcp://localhost:6379 \
+              -timeout 60s
+
+      - run:
+          name: Apply database migrations
+          command: npx prisma migrate deploy
+
+      - run:
+          name: Seed database
+          command: npx prisma db seed
+
+      - run:
+          name: Run E2E tests
+          command: npm run test:e2e
+
+  build:
+    docker:
+      - image: cimg/node:24.18.1
+
+    working_directory: ~/project/backend_notifications
+
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications
+
+    steps:
+      - checkout:
+          path: ~/project
+
+      - run:
+          name: Install dependencies
+          command: npm ci
+
+      - run:
+          name: Generate Prisma Client
+          command: npx prisma generate
+
       - run:
           name: Build backend
           command: npm run build
@@ -97,5 +176,6 @@ workflows:
     jobs:
       - lint
       - unit-tests
+      - e2e
       - build
       - coverage

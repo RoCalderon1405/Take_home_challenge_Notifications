@@ -20,14 +20,17 @@ import {
   ApiCreateNotification,
   ApiDeleteNotification,
   ApiGetNotification,
+  ApiGetNotificationDeliveries,
   ApiGetNotifications,
   ApiNotificationsController,
   ApiSendNotification,
   ApiUpdateNotification,
 } from './docs/notification-swagger.decorators';
+import { NotificationDeliveryQueryService } from './delivery-tracking';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto, UpdateNotificationDto } from './request';
 import {
+  NotificationDeliveryResponseDto,
   NotificationQueuedResponseDto,
   NotificationResponseDto,
 } from './response';
@@ -46,11 +49,13 @@ import { NotificationQueueProducer } from './queue/notification-queue.producer';
 export class NotificationsController {
   constructor(
     private readonly _notificationsService: NotificationsService,
+    private readonly _notificationDeliveryQueryService: NotificationDeliveryQueryService,
     private readonly _notificationQueueProducer: NotificationQueueProducer,
   ) {}
 
   /**
-   * Creates a notification owned by the authenticated user.
+   * Creates a notification owned by the authenticated user and immediately
+   * queues its first asynchronous delivery attempt.
    *
    * @param user Authenticated application user.
    * @param createNotificationDto Notification data supplied by the client.
@@ -58,12 +63,19 @@ export class NotificationsController {
    */
   @Post()
   @ApiCreateNotification()
-  create(
+  async create(
     @CurrentUser() user: UserModel,
     @Body()
     createNotificationDto: CreateNotificationDto,
   ): Promise<NotificationResponseDto> {
-    return this._notificationsService.create(user.id, createNotificationDto);
+    const notification = await this._notificationsService.create(
+      user.id,
+      createNotificationDto,
+    );
+
+    await this._notificationQueueProducer.enqueueSend(user.id, notification.id);
+
+    return notification;
   }
 
   /**
@@ -76,6 +88,19 @@ export class NotificationsController {
   @ApiGetNotifications()
   findAll(@CurrentUser() user: UserModel): Promise<NotificationResponseDto[]> {
     return this._notificationsService.findAllByUser(user.id);
+  }
+
+  /**
+   * Retrieves normalized delivery attempts and event history for an owned notification.
+   */
+  @Get(':id/deliveries')
+  @ApiGetNotificationDeliveries()
+  findDeliveries(
+    @CurrentUser() user: UserModel,
+    @Param('id', new ParseUUIDPipe())
+    id: string,
+  ): Promise<NotificationDeliveryResponseDto[]> {
+    return this._notificationDeliveryQueryService.findForUser(user.id, id);
   }
 
   /**

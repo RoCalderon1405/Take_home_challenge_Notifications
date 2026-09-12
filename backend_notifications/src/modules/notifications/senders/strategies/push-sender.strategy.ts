@@ -21,6 +21,10 @@ export class PushSenderStrategy implements NotificationSenderStrategy {
     private readonly pushProvider: PushProvider,
   ) {}
 
+  get providerName(): string {
+    return this.pushProvider.name;
+  }
+
   send(input: NotificationSendInput): Promise<NotificationSendResult> {
     return this.pushProvider.send(input);
   }

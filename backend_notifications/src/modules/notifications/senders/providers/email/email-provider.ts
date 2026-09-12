@@ -16,5 +16,7 @@ export interface EmailProviderResult {
  * or through a local console provider without changing business orchestration.
  */
 export interface EmailProvider {
+  readonly name: string;
+
   send(input: NotificationSendInput): Promise<EmailProviderResult>;
 }

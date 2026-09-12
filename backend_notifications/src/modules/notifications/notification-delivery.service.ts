@@ -13,7 +13,6 @@ import type { NotificationModel } from './models';
 
 import type { NotificationSendResult } from './senders/contracts';
 import { NotificationDispatcherService } from './senders/notification-dispatcher.service';
-import { NotificationProviderError } from './senders/errors/notification-provider.error';
 
 /**
  * Orchestrates notification delivery and persists each delivery attempt.
@@ -31,11 +30,8 @@ export class NotificationDeliveryService {
    * Sends a notification owned by the authenticated user.
    *
    * A delivery attempt is created before contacting the sender strategy.
-   * Both the attempt and notification are updated according to the result.
-   *
-   * @param userId Authenticated user identifier.
-   * @param notificationId Notification identifier.
-   * @returns Normalized result returned by the selected sender strategy.
+   * The selected infrastructure provider is persisted before the external
+   * call so failed attempts remain attributable to the correct provider.
    */
   async send(
     userId: string,
@@ -62,16 +58,19 @@ export class NotificationDeliveryService {
     }
 
     const notificationModel = NotificationMapper.toModel(notification);
+    const providerName = this._dispatcher.getProviderName(
+      notificationModel.channel,
+    );
 
     const delivery = await this.createDeliveryAttempt(
       userId,
       notificationId,
       notificationModel,
+      providerName,
     );
 
     try {
       const result = await this._dispatcher.send(notificationModel);
-
       const completedAt = new Date();
 
       await this._prismaService.$transaction([
@@ -82,10 +81,8 @@ export class NotificationDeliveryService {
           data: {
             status: DeliveryStatus.SENT,
             provider: result.provider,
-            providerResponse: {
-              providerMessageId: result.providerMessageId ?? null,
-              response: result.providerResponse ?? {},
-            },
+            providerMessageId: result.providerMessageId ?? null,
+            providerResponse: result.providerResponse ?? {},
             errorMessage: null,
             completedAt,
           },
@@ -109,9 +106,6 @@ export class NotificationDeliveryService {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      const provider =
-        error instanceof NotificationProviderError ? error.provider : null;
-
       const completedAt = new Date();
 
       await this._prismaService.$transaction([
@@ -121,7 +115,7 @@ export class NotificationDeliveryService {
           },
           data: {
             status: DeliveryStatus.FAILED,
-            provider,
+            provider: providerName,
             errorMessage,
             completedAt,
           },
@@ -149,16 +143,12 @@ export class NotificationDeliveryService {
    * Both operations are executed atomically. If concurrent workers calculate
    * the same attempt number, the database unique constraint rejects one of
    * them and the operation retries with the latest attempt number.
-   *
-   * @param userId Notification owner identifier.
-   * @param notificationId Notification identifier.
-   * @param notification Application notification data.
-   * @returns Identifier of the created delivery attempt.
    */
   private async createDeliveryAttempt(
     userId: string,
     notificationId: string,
     notification: NotificationModel,
+    providerName: string,
   ): Promise<{ id: string }> {
     for (
       let retry = 0;
@@ -188,6 +178,7 @@ export class NotificationDeliveryService {
               notificationId,
               attemptNumber,
               status: DeliveryStatus.PROCESSING,
+              provider: providerName,
               requestPayload: {
                 channel: notification.channel,
                 recipient: notification.recipient,

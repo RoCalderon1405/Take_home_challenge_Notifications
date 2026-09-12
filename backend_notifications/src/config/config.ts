@@ -54,6 +54,10 @@ export const envSchema = z
 
     EMAIL_FROM: providerCredential('EMAIL_FROM is required'),
 
+    RESEND_WEBHOOK_SECRET: providerCredential(
+      'RESEND_WEBHOOK_SECRET must not be empty',
+    ),
+
     SMS_PROVIDER: z.enum(['console', 'twilio']).default('console'),
 
     TWILIO_ACCOUNT_SID: providerCredential('TWILIO_ACCOUNT_SID is required'),
@@ -65,6 +69,19 @@ export const envSchema = z
     ),
 
     TWILIO_FROM_NUMBER: providerCredential('TWILIO_FROM_NUMBER is required'),
+
+    TWILIO_AUTH_TOKEN: providerCredential(
+      'TWILIO_AUTH_TOKEN must not be empty',
+    ),
+
+    PUBLIC_API_BASE_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z
+        .string()
+        .url({ message: 'PUBLIC_API_BASE_URL must be a valid URL' })
+        .transform((value) => value.replace(/\/+$/, ''))
+        .optional(),
+    ),
 
     PUSH_PROVIDER: z.enum(['console', 'firebase']).default('console'),
 
@@ -84,6 +101,13 @@ export const envSchema = z
       addRequiredIssue(ctx, config.RESEND_API_KEY, 'RESEND_API_KEY', 'resend');
 
       addRequiredIssue(ctx, config.EMAIL_FROM, 'EMAIL_FROM', 'resend');
+
+      addRequiredIssue(
+        ctx,
+        config.RESEND_WEBHOOK_SECRET,
+        'RESEND_WEBHOOK_SECRET',
+        'resend',
+      );
     }
 
     if (config.SMS_PROVIDER === 'twilio') {
@@ -112,6 +136,20 @@ export const envSchema = z
         ctx,
         config.TWILIO_FROM_NUMBER,
         'TWILIO_FROM_NUMBER',
+        'twilio',
+      );
+
+      addRequiredIssue(
+        ctx,
+        config.TWILIO_AUTH_TOKEN,
+        'TWILIO_AUTH_TOKEN',
+        'twilio',
+      );
+
+      addRequiredIssue(
+        ctx,
+        config.PUBLIC_API_BASE_URL,
+        'PUBLIC_API_BASE_URL',
         'twilio',
       );
     }

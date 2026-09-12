@@ -13,5 +13,7 @@ export interface SmsProviderResult {
  * Infrastructure contract used by the SMS notification strategy.
  */
 export interface SmsProvider {
+  readonly name: string;
+
   send(input: NotificationSendInput): Promise<SmsProviderResult>;
 }

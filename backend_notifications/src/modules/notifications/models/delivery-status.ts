@@ -5,6 +5,7 @@ export const DeliveryStatus = {
   PENDING: 'PENDING',
   PROCESSING: 'PROCESSING',
   SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
   FAILED: 'FAILED',
 } as const;
 

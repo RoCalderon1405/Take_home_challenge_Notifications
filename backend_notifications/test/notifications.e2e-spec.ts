@@ -30,11 +30,6 @@ interface NotificationResponse {
   updatedAt: string;
 }
 
-interface QueuedResponse {
-  status: 'QUEUED';
-  jobId?: string;
-}
-
 describe('Notifications flow (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
@@ -224,18 +219,7 @@ describe('Notifications flow (e2e)', () => {
       .expect(404);
   });
 
-  it('should queue and process user A notification', async () => {
-    const response = await request(app.getHttpServer())
-      .post(`/api/notifications/${notificationId}/send`)
-      .set('Authorization', `Bearer ${userAToken}`)
-      .expect(202);
-
-    const queued = response.body as QueuedResponse;
-
-    expect(queued.status).toBe('QUEUED');
-
-    expect(typeof queued.jobId).toBe('string');
-
+  it('should automatically queue and process user A notification after creation', async () => {
     await waitUntilNotificationIsSent(notificationId);
 
     const persistedNotification = await prismaService.notification.findUnique({
@@ -295,11 +279,6 @@ describe('Notifications flow (e2e)', () => {
 
     const notification = createResponse.body as NotificationResponse;
 
-    await request(app.getHttpServer())
-      .post(`/api/notifications/${notification.id}/send`)
-      .set('Authorization', `Bearer ${userAToken}`)
-      .expect(202);
-
     await waitUntilNotificationIsSent(notification.id);
 
     const delivery = await prismaService.notificationDelivery.findFirst({
@@ -332,11 +311,6 @@ describe('Notifications flow (e2e)', () => {
       .expect(201);
 
     const notification = createResponse.body as NotificationResponse;
-
-    await request(app.getHttpServer())
-      .post(`/api/notifications/${notification.id}/send`)
-      .set('Authorization', `Bearer ${userAToken}`)
-      .expect(202);
 
     await waitUntilNotificationIsSent(notification.id);
 

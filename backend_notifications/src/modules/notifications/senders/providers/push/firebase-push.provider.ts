@@ -43,6 +43,8 @@ interface CachedAccessToken {
 export class FirebasePushProvider implements PushProvider {
   private static readonly PROVIDER = 'firebase';
 
+  readonly name = FirebasePushProvider.PROVIDER;
+
   private static readonly GOOGLE_TOKEN_ENDPOINT =
     'https://oauth2.googleapis.com/token';
 
@@ -95,7 +97,7 @@ export class FirebasePushProvider implements PushProvider {
       });
     } catch (error: unknown) {
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         `Firebase request failed: ${this.getErrorMessage(error)}`,
         true,
       );
@@ -107,7 +109,7 @@ export class FirebasePushProvider implements PushProvider {
       payload = (await response.json()) as FirebaseSendPayload;
     } catch {
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         `Firebase returned an invalid response: HTTP ${response.status}`,
         this.isRetryableStatus(response.status),
         response.status,
@@ -124,7 +126,7 @@ export class FirebasePushProvider implements PushProvider {
         response.status;
 
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         `Firebase failed to send push notification: ${providerMessage}`,
         this.isRetryableStatus(response.status),
         providerCode,
@@ -135,14 +137,14 @@ export class FirebasePushProvider implements PushProvider {
 
     if (!messageName) {
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         'Firebase did not return a message identifier',
         false,
       );
     }
 
     return {
-      provider: FirebasePushProvider.PROVIDER,
+      provider: this.name,
 
       providerMessageId: messageName,
 
@@ -184,7 +186,7 @@ export class FirebasePushProvider implements PushProvider {
       });
     } catch (error: unknown) {
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         `Firebase OAuth token request failed: ${this.getErrorMessage(error)}`,
         true,
       );
@@ -196,7 +198,7 @@ export class FirebasePushProvider implements PushProvider {
       payload = (await response.json()) as GoogleOAuthTokenPayload;
     } catch {
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         `Firebase OAuth token request returned an invalid response: HTTP ${response.status}`,
         this.isRetryableStatus(response.status),
         response.status,
@@ -209,7 +211,7 @@ export class FirebasePushProvider implements PushProvider {
       const oauthError = this.readString(payload.error);
 
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         `Firebase OAuth token request failed: ${
           description ?? oauthError ?? `HTTP ${response.status}`
         }`,
@@ -224,7 +226,7 @@ export class FirebasePushProvider implements PushProvider {
 
     if (!accessToken || !expiresIn) {
       throw new NotificationProviderError(
-        FirebasePushProvider.PROVIDER,
+        this.name,
         'Firebase OAuth token response is incomplete',
         false,
       );

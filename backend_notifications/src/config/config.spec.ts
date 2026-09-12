@@ -69,6 +69,17 @@ describe('environment provider configuration', () => {
     expect(result.success).toBe(false);
   });
 
+  it('should require the Resend webhook signing secret when Resend is selected', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      EMAIL_PROVIDER: 'resend',
+      RESEND_API_KEY: 're_test',
+      EMAIL_FROM: 'Notifications <notifications@example.com>',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it('should accept Resend configuration when required credentials exist', () => {
     const result = envSchema.safeParse({
       ...baseEnv,
@@ -76,6 +87,7 @@ describe('environment provider configuration', () => {
       EMAIL_PROVIDER: 'resend',
       RESEND_API_KEY: 're_test',
       EMAIL_FROM: 'Notifications <notifications@example.com>',
+      RESEND_WEBHOOK_SECRET: 'whsec_test',
     });
 
     expect(result.success).toBe(true);
@@ -99,6 +111,8 @@ describe('environment provider configuration', () => {
       TWILIO_API_KEY_SID: 'SK123',
       TWILIO_API_KEY_SECRET: 'twilio-api-key-secret',
       TWILIO_FROM_NUMBER: '+15551234567',
+      TWILIO_AUTH_TOKEN: 'primary-auth-token',
+      PUBLIC_API_BASE_URL: 'https://api.example.com',
     });
 
     expect(result.success).toBe(true);
@@ -124,5 +138,64 @@ describe('environment provider configuration', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+  it('should allow webhook secrets to be omitted for console providers', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      RESEND_WEBHOOK_SECRET: '',
+      TWILIO_AUTH_TOKEN: '',
+      PUBLIC_API_BASE_URL: '',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('should require Twilio Auth Token when the SMS provider is twilio', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      SMS_PROVIDER: 'twilio',
+      TWILIO_ACCOUNT_SID: 'AC123',
+      TWILIO_API_KEY_SID: 'SK123',
+      TWILIO_API_KEY_SECRET: 'twilio-api-key-secret',
+      TWILIO_FROM_NUMBER: '+15551234567',
+      PUBLIC_API_BASE_URL: 'https://api.example.com',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('should require a public callback URL when the SMS provider is twilio', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      SMS_PROVIDER: 'twilio',
+      TWILIO_ACCOUNT_SID: 'AC123',
+      TWILIO_API_KEY_SID: 'SK123',
+      TWILIO_API_KEY_SECRET: 'twilio-api-key-secret',
+      TWILIO_FROM_NUMBER: '+15551234567',
+      TWILIO_AUTH_TOKEN: 'primary-auth-token',
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept Twilio status callback configuration and normalize the base URL', () => {
+    const result = envSchema.safeParse({
+      ...baseEnv,
+      SMS_PROVIDER: 'twilio',
+      TWILIO_ACCOUNT_SID: 'AC123',
+      TWILIO_API_KEY_SID: 'SK123',
+      TWILIO_API_KEY_SECRET: 'twilio-api-key-secret',
+      TWILIO_FROM_NUMBER: '+15551234567',
+      TWILIO_AUTH_TOKEN: 'primary-auth-token',
+      PUBLIC_API_BASE_URL: 'https://api.example.com/',
+    });
+
+    expect(result.success).toBe(true);
+
+    if (!result.success) {
+      throw new Error('Expected environment parsing to succeed');
+    }
+
+    expect(result.data.PUBLIC_API_BASE_URL).toBe('https://api.example.com');
   });
 });
