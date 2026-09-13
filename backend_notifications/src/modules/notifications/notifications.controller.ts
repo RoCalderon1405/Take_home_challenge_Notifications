@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -28,11 +29,16 @@ import {
 } from './docs/notification-swagger.decorators';
 import { NotificationDeliveryQueryService } from './delivery-tracking';
 import { NotificationsService } from './notifications.service';
-import { CreateNotificationDto, UpdateNotificationDto } from './request';
+import {
+  CreateNotificationDto,
+  ListNotificationsQueryDto,
+  UpdateNotificationDto,
+} from './request';
 import {
   NotificationDeliveryResponseDto,
   NotificationQueuedResponseDto,
   NotificationResponseDto,
+  PaginatedNotificationsResponseDto,
 } from './response';
 import { NotificationQueueProducer } from './queue/notification-queue.producer';
 
@@ -79,15 +85,20 @@ export class NotificationsController {
   }
 
   /**
-   * Retrieves all notifications owned by the authenticated user.
+   * Retrieves a paginated, filterable and sortable notification collection
+   * owned by the authenticated user.
    *
    * @param user Authenticated application user.
-   * @returns Notifications owned by the authenticated user.
+   * @param query Pagination, sorting, search and filter parameters.
+   * @returns A page of notifications and its pagination metadata.
    */
   @Get()
   @ApiGetNotifications()
-  findAll(@CurrentUser() user: UserModel): Promise<NotificationResponseDto[]> {
-    return this._notificationsService.findAllByUser(user.id);
+  findAll(
+    @CurrentUser() user: UserModel,
+    @Query() query: ListNotificationsQueryDto,
+  ): Promise<PaginatedNotificationsResponseDto> {
+    return this._notificationsService.findAllByUser(user.id, query);
   }
 
   /**

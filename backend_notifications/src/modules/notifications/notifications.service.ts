@@ -4,13 +4,23 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { PrismaErrorCode, PrismaErrorHandler } from '@app/common/database';
+import { Prisma } from '@app/generated/prisma/client';
+
 import { PrismaService } from '../prisma/prisma.service';
 
 import { NotificationMapper } from './mappers';
-import { CreateNotificationDto, UpdateNotificationDto } from './request';
-import { NotificationResponseDto } from './response';
+import {
+  CreateNotificationDto,
+  ListNotificationsQueryDto,
+  NotificationSortBy,
+  UpdateNotificationDto,
+} from './request';
+import {
+  NotificationResponseDto,
+  PaginatedNotificationsResponseDto,
+} from './response';
 import { NotificationChannelCode } from './models';
-import { PrismaErrorCode, PrismaErrorHandler } from '@app/common/database';
 
 /**
  * Provides notification-related application operations.
@@ -68,36 +78,103 @@ export class NotificationsService {
   }
 
   /**
-   * Retrieves all notifications owned by the authenticated user.
+   * Retrieves a paginated notification collection owned by the authenticated
+   * user, with optional search, channel/status filters and sorting.
    *
-   * Ownership is enforced directly in the database query so notifications
-   * belonging to other users never leave the persistence layer.
-   *
-   * Results are ordered from newest to oldest.
+   * Ownership is always part of the persistence filter, so data belonging to
+   * another user never leaves PostgreSQL. Offset pagination is intentionally
+   * used because the frontend data grid navigates by page number.
    *
    * @param userId Identifier of the authenticated user.
-   * @returns Notifications owned exclusively by the authenticated user.
+   * @param query Pagination, sorting, search and filter parameters.
+   * @returns Notifications and pagination metadata for the requested page.
    */
-  async findAllByUser(userId: string): Promise<NotificationResponseDto[]> {
-    const notifications = await this._prismaService.notification.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        channel: {
-          select: {
-            code: true,
+  async findAllByUser(
+    userId: string,
+    query: ListNotificationsQueryDto,
+  ): Promise<PaginatedNotificationsResponseDto> {
+    const { page, pageSize, sortBy, sortDirection, status, channel, search } =
+      query;
+
+    const where: Prisma.NotificationWhereInput = {
+      userId,
+      ...(status !== undefined ? { status } : {}),
+      ...(channel !== undefined
+        ? {
+            channel: {
+              code: channel,
+            },
+          }
+        : {}),
+      ...(search !== undefined
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' } },
+              { content: { contains: search, mode: 'insensitive' } },
+              { recipient: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const orderBy = this.buildOrderBy(sortBy, sortDirection);
+    const skip = (page - 1) * pageSize;
+
+    const [notifications, totalItems] = await this._prismaService.$transaction([
+      this._prismaService.notification.findMany({
+        where,
+        include: {
+          channel: {
+            select: {
+              code: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy,
+        skip,
+        take: pageSize,
+      }),
+      this._prismaService.notification.count({ where }),
+    ]);
 
-    return notifications.map((notification) =>
+    const items = notifications.map((notification) =>
       NotificationMapper.toResponseFromPersistence(notification),
     );
+
+    const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize);
+
+    return {
+      items,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1 && totalPages > 0,
+      },
+    };
+  }
+
+  private buildOrderBy(
+    sortBy: ListNotificationsQueryDto['sortBy'],
+    sortDirection: ListNotificationsQueryDto['sortDirection'],
+  ): Prisma.NotificationOrderByWithRelationInput {
+    switch (sortBy) {
+      case NotificationSortBy.UPDATED_AT:
+        return { updatedAt: sortDirection };
+      case NotificationSortBy.TITLE:
+        return { title: sortDirection };
+      case NotificationSortBy.STATUS:
+        return { status: sortDirection };
+      case NotificationSortBy.CHANNEL:
+        return { channel: { code: sortDirection } };
+      case NotificationSortBy.RECIPIENT:
+        return { recipient: sortDirection };
+      case NotificationSortBy.CREATED_AT:
+      default:
+        return { createdAt: sortDirection };
+    }
   }
 
   /**

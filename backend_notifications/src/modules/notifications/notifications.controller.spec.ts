@@ -108,18 +108,38 @@ describe('NotificationsController', () => {
   });
 
   describe('findAll', () => {
-    it('should return notifications for the authenticated user', async () => {
-      notificationsServiceMock.findAllByUser.mockResolvedValue([
-        notificationResponse,
-      ]);
+    it('should return a paginated notification collection for the authenticated user', async () => {
+      const query = {
+        page: 2,
+        pageSize: 10,
+        sortBy: 'createdAt' as const,
+        sortDirection: 'desc' as const,
+      };
 
-      const result = await controller.findAll(user);
+      const paginatedResponse = {
+        items: [notificationResponse],
+        pagination: {
+          page: 2,
+          pageSize: 10,
+          totalItems: 11,
+          totalPages: 2,
+          hasNextPage: false,
+          hasPreviousPage: true,
+        },
+      };
+
+      notificationsServiceMock.findAllByUser.mockResolvedValue(
+        paginatedResponse,
+      );
+
+      const result = await controller.findAll(user, query);
 
       expect(notificationsServiceMock.findAllByUser).toHaveBeenCalledWith(
         user.id,
+        query,
       );
 
-      expect(result).toEqual([notificationResponse]);
+      expect(result).toEqual(paginatedResponse);
     });
   });
 

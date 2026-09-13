@@ -30,6 +30,18 @@ interface NotificationResponse {
   updatedAt: string;
 }
 
+interface PaginatedNotificationsResponse {
+  items: NotificationResponse[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
 describe('Notifications flow (e2e)', () => {
   let app: INestApplication<App>;
   let prismaService: PrismaService;
@@ -185,11 +197,45 @@ describe('Notifications flow (e2e)', () => {
       .set('Authorization', `Bearer ${userAToken}`)
       .expect(200);
 
-    const notifications = response.body as NotificationResponse[];
+    const page = response.body as PaginatedNotificationsResponse;
 
+    expect(page.pagination.page).toBe(1);
+    expect(page.pagination.pageSize).toBe(20);
     expect(
-      notifications.some((notification) => notification.id === notificationId),
+      page.items.some((notification) => notification.id === notificationId),
     ).toBe(true);
+  });
+
+  it('should support pagination, filtering, search and sorting for user A', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/notifications')
+      .query({
+        page: 1,
+        pageSize: 5,
+        sortBy: 'title',
+        sortDirection: 'asc',
+        channel: 'EMAIL',
+        search: 'E2E',
+      })
+      .set('Authorization', `Bearer ${userAToken}`)
+      .expect(200);
+
+    const page = response.body as PaginatedNotificationsResponse;
+
+    expect(page.pagination.page).toBe(1);
+    expect(page.pagination.pageSize).toBe(5);
+    expect(page.pagination.totalItems).toBeGreaterThanOrEqual(1);
+    expect(
+      page.items.some((notification) => notification.id === notificationId),
+    ).toBe(true);
+  });
+
+  it('should reject invalid pagination parameters', async () => {
+    await request(app.getHttpServer())
+      .get('/api/notifications')
+      .query({ page: 0, pageSize: 101 })
+      .set('Authorization', `Bearer ${userAToken}`)
+      .expect(400);
   });
 
   it('should not expose user A notification in user B list', async () => {
@@ -198,10 +244,10 @@ describe('Notifications flow (e2e)', () => {
       .set('Authorization', `Bearer ${userBToken}`)
       .expect(200);
 
-    const notifications = response.body as NotificationResponse[];
+    const page = response.body as PaginatedNotificationsResponse;
 
     expect(
-      notifications.some((notification) => notification.id === notificationId),
+      page.items.some((notification) => notification.id === notificationId),
     ).toBe(false);
   });
 
