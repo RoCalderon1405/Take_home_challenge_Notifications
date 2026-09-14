@@ -1,4 +1,4 @@
-// Firebase Messaging service worker placeholder.
+// Handles Firebase Cloud Messaging notifications received while the app is in the background.
 
 
 importScripts(
