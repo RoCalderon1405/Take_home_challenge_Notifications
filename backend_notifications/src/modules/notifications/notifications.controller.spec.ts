@@ -38,6 +38,7 @@ describe('NotificationsController', () => {
   const notificationsServiceMock = {
     create: jest.fn(),
     findAllByUser: jest.fn(),
+    getDashboardByUser: jest.fn(),
     findOneByIdForUser: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
@@ -140,6 +141,36 @@ describe('NotificationsController', () => {
       );
 
       expect(result).toEqual(paginatedResponse);
+    });
+  });
+
+  describe('getDashboard', () => {
+    it('should return dashboard summary and recent notifications for the authenticated user', async () => {
+      const dashboardResponse = {
+        summary: {
+          total: 25,
+          delivered: 18,
+          pending: 4,
+          failed: 3,
+        },
+        recent: [notificationResponse],
+      };
+
+      notificationsServiceMock.getDashboardByUser.mockResolvedValue(
+        dashboardResponse,
+      );
+
+      const dashboardController = controller as NotificationsController & {
+        getDashboard: (user: UserModel) => Promise<typeof dashboardResponse>;
+      };
+
+      const result = await dashboardController.getDashboard(user);
+
+      expect(notificationsServiceMock.getDashboardByUser).toHaveBeenCalledWith(
+        user.id,
+      );
+
+      expect(result).toEqual(dashboardResponse);
     });
   });
 

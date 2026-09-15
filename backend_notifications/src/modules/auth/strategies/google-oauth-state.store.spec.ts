@@ -39,11 +39,14 @@ describe('GoogleOAuthStateStore', () => {
 
   it('should reject a modified OAuth state', async () => {
     const state = await createState();
-    const modified = `${state.slice(0, -1)}${state.endsWith('A') ? 'B' : 'A'}`;
+    const [payload, signature] = state.split('.');
+
+    const modifiedSignature = `${signature[0] === 'A' ? 'B' : 'A'}${signature.slice(1)}`;
+
+    const modified = `${payload}.${modifiedSignature}`;
 
     await expect(verifyState(modified)).resolves.toBe(false);
   });
-
   it('should reject a malformed OAuth state', async () => {
     await expect(verifyState('invalid')).resolves.toBe(false);
   });

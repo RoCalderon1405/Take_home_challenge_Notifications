@@ -1,18 +1,18 @@
 export const NotificationChannel = {
-  EMAIL: 'EMAIL',
-  SMS: 'SMS',
-  PUSH: 'PUSH',
+  EMAIL: "EMAIL",
+  SMS: "SMS",
+  PUSH: "PUSH",
 } as const;
 
 export type NotificationChannel =
   (typeof NotificationChannel)[keyof typeof NotificationChannel];
 
 export const NotificationStatus = {
-  PENDING: 'PENDING',
-  PROCESSING: 'PROCESSING',
-  SENT: 'SENT',
-  DELIVERED: 'DELIVERED',
-  FAILED: 'FAILED',
+  PENDING: "PENDING",
+  PROCESSING: "PROCESSING",
+  SENT: "SENT",
+  DELIVERED: "DELIVERED",
+  FAILED: "FAILED",
 } as const;
 
 export type NotificationStatus =
@@ -62,4 +62,16 @@ export interface NotificationDeliveryModel {
   completedAt: Date | null;
   deliveredAt: Date | null;
   events: DeliveryEventModel[];
+}
+
+export interface NotificationDashboardSummary {
+  total: number;
+  delivered: number;
+  pending: number;
+  failed: number;
+}
+
+export interface NotificationDashboard {
+  summary: NotificationDashboardSummary;
+  recent: NotificationModel[];
 }

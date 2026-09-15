@@ -20,7 +20,7 @@ import {
   NotificationResponseDto,
   PaginatedNotificationsResponseDto,
 } from './response';
-import { NotificationChannelCode } from './models';
+import { NotificationChannelCode, NotificationStatus } from './models';
 
 /**
  * Provides notification-related application operations.
@@ -153,6 +153,80 @@ export class NotificationsService {
         hasNextPage: page < totalPages,
         hasPreviousPage: page > 1 && totalPages > 0,
       },
+    };
+  }
+
+  /**
+   * Retrieves dashboard metrics and the ten most recent notifications
+   * owned by the authenticated user.
+   *
+   * Status counts and recent notifications are fetched concurrently
+   * to minimize dashboard loading time.
+   *
+   * @param userId Identifier of the authenticated user.
+   * @returns Dashboard summary and the ten most recent notifications.
+   */
+  async getDashboardByUser(userId: string): Promise<{
+    summary: {
+      total: number;
+      delivered: number;
+      pending: number;
+      failed: number;
+    };
+    recent: NotificationResponseDto[];
+  }> {
+    const statusCountsPromise = this._prismaService.notification.groupBy({
+      by: ['status'],
+      where: {
+        userId,
+      },
+      orderBy: {
+        status: 'asc',
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const recentNotificationsPromise =
+      this._prismaService.notification.findMany({
+        where: {
+          userId,
+        },
+        include: {
+          channel: {
+            select: {
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      });
+
+    const [statusCounts, recentNotifications] = await Promise.all([
+      statusCountsPromise,
+      recentNotificationsPromise,
+    ]);
+
+    const countsByStatus = new Map(
+      statusCounts.map((item) => [item.status, item._count._all]),
+    );
+
+    const total = statusCounts.reduce((sum, item) => sum + item._count._all, 0);
+
+    return {
+      summary: {
+        total,
+        delivered: countsByStatus.get(NotificationStatus.DELIVERED) ?? 0,
+        pending: countsByStatus.get(NotificationStatus.PENDING) ?? 0,
+        failed: countsByStatus.get(NotificationStatus.FAILED) ?? 0,
+      },
+      recent: recentNotifications.map((notification) =>
+        NotificationMapper.toResponseFromPersistence(notification),
+      ),
     };
   }
 
