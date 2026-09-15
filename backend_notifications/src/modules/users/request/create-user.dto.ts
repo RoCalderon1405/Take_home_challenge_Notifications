@@ -17,7 +17,7 @@ export class CreateUserDto {
   email!: string;
 
   @IsString()
-  @MinLength(16, { message: 'Password must be at least 16 characters long' })
+  @MinLength(5, { message: 'Password must be at least 5 characters long' })
   @MaxLength(128, { message: 'Password must not exceed 128 characters' })
   password!: string;
 }
