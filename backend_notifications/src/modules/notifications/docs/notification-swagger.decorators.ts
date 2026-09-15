@@ -17,12 +17,12 @@ import {
 
 import { CreateNotificationDto, UpdateNotificationDto } from '../request';
 import {
+  NotificationDashboardResponseDto,
   NotificationDeliveryResponseDto,
   NotificationResponseDto,
   NotificationQueuedResponseDto,
   PaginatedNotificationsResponseDto,
 } from '../response';
-
 const NOTIFICATION_ID_EXAMPLE = '70a7ad1a-8871-4b94-afca-201e8f6f0225';
 
 /**
@@ -172,6 +172,24 @@ export function ApiGetNotifications() {
     ApiOkResponse({
       description: 'Notifications retrieved successfully.',
       type: PaginatedNotificationsResponseDto,
+    }),
+  );
+}
+
+/**
+ * Documents the dashboard endpoint for the authenticated user.
+ */
+export function ApiGetNotificationsDashboard() {
+  return applyDecorators(
+    ApiOperation({
+      summary: 'Get notification dashboard',
+      description:
+        'Returns aggregated notification metrics and the ten most recent notifications owned by the authenticated user.',
+    }),
+
+    ApiOkResponse({
+      description: 'Notification dashboard retrieved successfully.',
+      type: NotificationDashboardResponseDto,
     }),
   );
 }

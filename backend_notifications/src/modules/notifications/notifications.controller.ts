@@ -23,6 +23,7 @@ import {
   ApiGetNotification,
   ApiGetNotificationDeliveries,
   ApiGetNotifications,
+  ApiGetNotificationsDashboard,
   ApiNotificationsController,
   ApiSendNotification,
   ApiUpdateNotification,
@@ -35,6 +36,7 @@ import {
   UpdateNotificationDto,
 } from './request';
 import {
+  NotificationDashboardResponseDto,
   NotificationDeliveryResponseDto,
   NotificationQueuedResponseDto,
   NotificationResponseDto,
@@ -99,6 +101,21 @@ export class NotificationsController {
     @Query() query: ListNotificationsQueryDto,
   ): Promise<PaginatedNotificationsResponseDto> {
     return this._notificationsService.findAllByUser(user.id, query);
+  }
+
+  /**
+   * Retrieves dashboard metrics and the ten most recent notifications
+   * owned by the authenticated user.
+   *
+   * @param user Authenticated application user.
+   * @returns Dashboard summary and recent notifications.
+   */
+  @Get('dashboard')
+  @ApiGetNotificationsDashboard()
+  getDashboard(
+    @CurrentUser() user: UserModel,
+  ): Promise<NotificationDashboardResponseDto> {
+    return this._notificationsService.getDashboardByUser(user.id);
   }
 
   /**

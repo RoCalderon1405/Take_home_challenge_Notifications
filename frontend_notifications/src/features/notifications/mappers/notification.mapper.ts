@@ -1,13 +1,15 @@
 import type {
+  NotificationDashboardDto,
   NotificationDeliveryDto,
   NotificationDto,
   PaginatedNotificationsDto,
-} from '../api/notification.dto';
+} from "../api/notification.dto";
 import type {
+  NotificationDashboard,
   NotificationDeliveryModel,
   NotificationModel,
   PaginatedNotifications,
-} from '../models/notification.model';
+} from "../models/notification.model";
 
 const toDate = (value: string | null): Date | null =>
   value ? new Date(value) : null;
@@ -40,6 +42,13 @@ export const notificationMapper = {
         ...event,
         occurredAt: new Date(event.occurredAt),
       })),
+    };
+  },
+
+  toDashboard(dto: NotificationDashboardDto): NotificationDashboard {
+    return {
+      summary: dto.summary,
+      recent: dto.recent.map((item) => notificationMapper.toModel(item)),
     };
   },
 };

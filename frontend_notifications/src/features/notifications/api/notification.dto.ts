@@ -72,3 +72,15 @@ export interface QueuedResponseDto {
   status: 'QUEUED';
   jobId: string;
 }
+
+export interface NotificationDashboardSummaryDto {
+  total: number;
+  delivered: number;
+  pending: number;
+  failed: number;
+}
+
+export interface NotificationDashboardDto {
+  summary: NotificationDashboardSummaryDto;
+  recent: NotificationDto[];
+}

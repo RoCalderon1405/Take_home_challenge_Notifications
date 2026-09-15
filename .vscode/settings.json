@@ -1,0 +1,12 @@
+{
+    "eslint.workingDirectories": [
+      {
+        "directory": "./backend_notifications",
+        "changeProcessCWD": true
+      },
+      {
+        "directory": "./frontend_notifications",
+        "changeProcessCWD": true
+      }
+    ]
+  }

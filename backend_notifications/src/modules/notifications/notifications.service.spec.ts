@@ -5,7 +5,6 @@ import { PrismaErrorCode, PrismaErrorHandler } from '@app/common/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationMapper } from './mappers';
 import { NotificationChannelCode, NotificationStatus } from './models';
-import { NotificationSortBy, SortDirection } from './request';
 import { NotificationsService } from './notifications.service';
 import { NotificationResponseDto } from './response';
 
@@ -17,6 +16,7 @@ describe('NotificationsService', () => {
     notification: {
       create: jest.fn(),
       findMany: jest.fn(),
+      groupBy: jest.fn(),
       count: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
@@ -140,8 +140,8 @@ describe('NotificationsService', () => {
       const query = {
         page: 2,
         pageSize: 10,
-        sortBy: NotificationSortBy.TITLE,
-        sortDirection: SortDirection.ASC,
+        sortBy: 'title' as const,
+        sortDirection: 'asc' as const,
         status: NotificationStatus.SENT,
         channel: NotificationChannelCode.EMAIL,
         search: 'welcome',
@@ -171,7 +171,7 @@ describe('NotificationsService', () => {
             },
           },
         },
-        orderBy: { title: SortDirection.ASC },
+        orderBy: { title: 'asc' as const },
         skip: 10,
         take: 10,
       });
@@ -208,8 +208,8 @@ describe('NotificationsService', () => {
       const result = await service.findAllByUser('user-id', {
         page: 1,
         pageSize: 20,
-        sortBy: NotificationSortBy.CREATED_AT,
-        sortDirection: SortDirection.DESC,
+        sortBy: 'createdAt' as const,
+        sortDirection: 'desc' as const,
       });
 
       expect(prismaServiceMock.notification.findMany).toHaveBeenCalledWith({
@@ -221,7 +221,7 @@ describe('NotificationsService', () => {
             },
           },
         },
-        orderBy: { createdAt: SortDirection.DESC },
+        orderBy: { createdAt: 'desc' as const },
         skip: 0,
         take: 20,
       });
@@ -236,6 +236,75 @@ describe('NotificationsService', () => {
           hasNextPage: false,
           hasPreviousPage: false,
         },
+      });
+    });
+  });
+
+  describe('getDashboardByUser', () => {
+    it('should return the summary and the 10 most recent notifications for the authenticated user', async () => {
+      const persistedNotification = {
+        id: notificationResponse.id,
+      };
+
+      prismaServiceMock.notification.groupBy.mockResolvedValue([
+        {
+          status: NotificationStatus.DELIVERED,
+          _count: { _all: 18 },
+        },
+        {
+          status: NotificationStatus.PENDING,
+          _count: { _all: 4 },
+        },
+        {
+          status: NotificationStatus.FAILED,
+          _count: { _all: 3 },
+        },
+      ]);
+
+      prismaServiceMock.notification.findMany.mockResolvedValue([
+        persistedNotification,
+      ]);
+
+      const result = await service.getDashboardByUser('user-id');
+
+      expect(prismaServiceMock.notification.groupBy).toHaveBeenCalledWith({
+        by: ['status'],
+        where: {
+          userId: 'user-id',
+        },
+        orderBy: {
+          status: 'asc',
+        },
+        _count: {
+          _all: true,
+        },
+      });
+
+      expect(prismaServiceMock.notification.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: 'user-id',
+        },
+        include: {
+          channel: {
+            select: {
+              code: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      });
+
+      expect(result).toEqual({
+        summary: {
+          total: 25,
+          delivered: 18,
+          pending: 4,
+          failed: 3,
+        },
+        recent: [notificationResponse],
       });
     });
   });
