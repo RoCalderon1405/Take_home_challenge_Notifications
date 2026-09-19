@@ -1,8 +1,7 @@
 {
   "name": "backend_notifications",
   "version": "1.0.0",
-  "description": "",
-  "author": "",
+  "author": "Roberto Tonatiuh Calderón Aguilar",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
