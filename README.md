@@ -117,6 +117,34 @@ NotificationDispatcher
 
 The orchestration layer depends on contracts rather than vendor SDKs. Adding another provider to an existing channel requires implementing the corresponding provider contract, registering it through NestJS dependency injection and adding its validated configuration.
 
+## Design patterns and architectural strategies
+
+The project intentionally applies a small set of patterns where they provide a clear benefit, without overengineering the take-home challenge.
+
+| Pattern / strategy                      | Where it is used                                      | Why it is used                                                                               |
+| --------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Strategy Pattern**                    | Email, SMS and Push sender strategies                 | Selects channel-specific behavior without filling the dispatcher with conditional logic.     |
+| **Adapter Pattern**                     | Resend, Twilio, Firebase and console providers        | Isolates third-party SDKs behind application-owned provider contracts.                       |
+| **Registry Pattern**                    | Notification sender registry                          | Resolves the correct strategy at runtime based on the notification channel.                  |
+| **Dependency Injection**                | NestJS modules, services and provider implementations | Keeps components replaceable, testable and loosely coupled.                                  |
+| **DTO boundary**                        | Request and response DTOs                             | Prevents HTTP contracts from leaking directly into persistence models.                       |
+| **Mapper pattern**                      | User and notification mappings                        | Converts between persistence/API representations and application models.                     |
+| **Queue-based asynchronous processing** | BullMQ + Redis notification delivery                  | Moves provider calls outside the HTTP request and enables retries and background processing. |
+| **Webhook-driven state updates**        | Resend and Twilio delivery events                     | Updates delivery status asynchronously when providers report later events.                   |
+| **Guard-based authorization**           | JWT-protected routes                                  | Centralizes authentication and authorization concerns outside controllers.                   |
+| **Configuration validation**            | Environment and provider configuration                | Fails fast when required settings are missing or inconsistent.                               |
+
+### SOLID principles applied
+
+- **Single Responsibility Principle:** controllers handle transport, services handle application logic, providers handle vendor-specific delivery and mappers handle model conversion.
+- **Open/Closed Principle:** new provider implementations can be added behind existing contracts without changing the notification lifecycle.
+- **Liskov Substitution Principle:** console and real providers are interchangeable implementations of the same provider contracts.
+- **Interface Segregation Principle:** Email, SMS and Push use focused contracts instead of one large provider interface.
+- **Dependency Inversion Principle:** orchestration depends on abstractions and contracts rather than directly on Resend, Twilio or Firebase SDKs.
+
+> [!NOTE]
+> The project uses ideas from **Clean Architecture** pragmatically: application boundaries are kept separate from Prisma and external providers where that separation adds real value, but the codebase avoids unnecessary abstraction layers.
+
 ---
 
 ## Features
@@ -344,5 +372,5 @@ npm run build
 Full Stack Developer
 
 [GitHub](https://github.com/RoCalderon1405) ·
-[Portfolio](https://portfoliorocalderon.netlify.app/) ·
+[Portfolio](https://portfoliorocalderon.netlify.app) ·
 [Repository](https://github.com/RoCalderon1405/Take_home_challenge_Notifications)
