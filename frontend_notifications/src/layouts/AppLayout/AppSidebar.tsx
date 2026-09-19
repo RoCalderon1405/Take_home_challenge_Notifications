@@ -1,3 +1,5 @@
+import GitHubIcon from '@mui/icons-material/GitHub';
+import CodeRoundedIcon from '@mui/icons-material/CodeRounded';
 import AddAlertRoundedIcon from '@mui/icons-material/AddAlertRounded';
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
@@ -69,7 +71,9 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
         {navItems.map(({ path, icon: Icon, key }) => {
           const selected =
             key === 'notifications'
-              ? location.pathname === '/notifications' || /^\/notifications\/[^/]+$/.test(location.pathname)
+              ? location.pathname === '/notifications' ||
+                (location.pathname !== '/notifications/new' &&
+                  /^\/notifications\/[^/]+(?:\/edit)?$/.test(location.pathname))
               : key === 'create'
                 ? location.pathname === '/notifications/new'
                 : location.pathname === path;
@@ -118,41 +122,28 @@ export function AppSidebar({ onNavigate }: AppSidebarProps) {
 
       <Box sx={{ flexGrow: 1 }} />
 
-      <Box sx={{ px: 1.8, pb: 2.2 }}>
-        <Box
-          sx={{
-            p: 2,
-            borderRadius: 3,
-            border: '1px solid rgba(122,137,255,0.18)',
-            bgcolor: 'rgba(255,255,255,0.035)',
-          }}
-        >
-          <Typography sx={{ color: '#fff', fontWeight: 750, fontSize: '0.9rem' }}>
-            Email · SMS · Push
-          </Typography>
-          <Typography sx={{ color: '#8190aa', fontSize: '0.78rem', mt: 0.6, lineHeight: 1.5 }}>
-            {t('dashboard.previewSubtitle')}
-          </Typography>
-          <Box
-            sx={{
-              mt: 1.6,
-              height: 6,
-              borderRadius: 99,
-              bgcolor: 'rgba(255,255,255,0.08)',
-              overflow: 'hidden',
-            }}
+      <Stack component="footer" spacing={0.5} sx={{ px: 1.5, pb: 2.2 }}>
+        {[
+          { href: 'https://github.com/RoCalderon1405/Take_home_challenge_Notifications', key: 'repository', icon: CodeRoundedIcon },
+          { href: 'https://github.com/RoCalderon1405', key: 'githubProfile', icon: GitHubIcon },
+        ].map(({ href, key, icon: Icon }) => (
+          <ListItemButton
+            key={key}
+            component="a"
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{ borderRadius: 2, color: '#aebbd0', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}
           >
-            <Box
-              sx={{
-                width: '72%',
-                height: '100%',
-                borderRadius: 99,
-                background: 'linear-gradient(90deg, #5b63ff, #9274ff)',
-              }}
+            <ListItemIcon sx={{ minWidth: 36, color: '#8190aa' }}>
+              <Icon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText
+              primary={<Typography component="span" sx={{ fontSize: '0.82rem' }}>{t(`nav.${key}`)}</Typography>}
             />
-          </Box>
-        </Box>
-      </Box>
+          </ListItemButton>
+        ))}
+      </Stack>
     </Box>
   );
 }

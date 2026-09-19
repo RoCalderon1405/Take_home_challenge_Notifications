@@ -42,6 +42,8 @@ export const es = {
     passwordRequired: 'La contraseña es obligatoria.',
   },
   nav: {
+    repository: 'Código fuente',
+    githubProfile: 'Perfil de GitHub',
     dashboard: 'Dashboard',
     notifications: 'Notificaciones',
     create: 'Nueva notificación',

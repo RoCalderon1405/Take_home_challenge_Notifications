@@ -1,241 +1,135 @@
-# Backend — Notifications API
+# Notifications · Backend
 
-NestJS notification API with authentication, owner-scoped CRUD and asynchronous delivery through BullMQ.
+**NestJS + Prisma + PostgreSQL + Redis / BullMQ** — authenticated notification management and asynchronous delivery.
 
-Global prefix: `/api`. Swagger: `/api/docs`.
+[Project overview](../README.md) · [Live Swagger](https://notifications-api-karp.onrender.com/api/docs) · [Frontend guide](../frontend_notifications/README.md) · [Coveralls](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main)
 
-## Stack
+---
 
-- NestJS 11 + TypeScript
-- Prisma 7 + PostgreSQL
-- Redis for cache and BullMQ
-- Passport Local + Google OAuth 2.0 + JWT, Argon2 and roles `USER` / `ADMIN`
-- Swagger
-- Jest unit and E2E tests
-- Real provider adapters: Resend (Email), Twilio (SMS), Firebase Cloud Messaging HTTP v1 (Push)
+## Run the complete challenge
 
-## Notification delivery architecture
+Use the [root startup script](../README.md#run-locally-with-one-script) for the default evaluation environment. Docker installs the dependencies, generates Prisma Client, applies migrations, seeds demo data and starts all four services.
 
-The notification domain does not depend directly on external vendors.
+| Environment | API base | Swagger |
+| --- | --- | --- |
+| Local Docker | `http://localhost:3000/api` | [Local Swagger](http://localhost:3000/api/docs) |
+| Render | `https://notifications-api-karp.onrender.com/api` | [Hosted Swagger](https://notifications-api-karp.onrender.com/api/docs) |
 
-```text
-NotificationDeliveryService
-        ↓
-NotificationDispatcherService
-        ↓
-NotificationSenderRegistry
-        ↓
-NotificationSenderStrategy
-        ├── EmailSenderStrategy → EmailProvider
-        │                         ├── ConsoleEmailProvider
-        │                         └── ResendEmailProvider
-        ├── SmsSenderStrategy   → SmsProvider
-        │                         ├── ConsoleSmsProvider
-        │                         └── TwilioSmsProvider
-        └── PushSenderStrategy  → PushProvider
-                                  ├── ConsolePushProvider
-                                  └── FirebasePushProvider
-```
+> **Hosted cold start:** the Render free backend may take **50 seconds or more** to wake after inactivity. Open Swagger, wait for it to respond, then use the frontend. The domain root is not the Swagger page.
 
-A strategy represents the **channel** (`EMAIL`, `SMS`, `PUSH`). A provider represents the **delivery infrastructure** used by that channel. Provider interfaces are compile-time TypeScript contracts; `Symbol` tokens such as `EMAIL_PROVIDER` are the runtime Nest dependency-injection keys.
+## Architecture and modules
 
-This separation allows a provider to be replaced without changing the queue, dispatcher, delivery orchestration or controller.
+| Module / path | Responsibility |
+| --- | --- |
+| `modules/auth` | Local credentials, Google provider integration, JWT and current user |
+| `modules/users` | User registration, roles and external identity mapping |
+| `modules/prisma` | Prisma lifecycle and PostgreSQL connection |
+| `modules/notifications` | Owner-scoped CRUD and delivery orchestration |
+| `notifications/queue` | BullMQ producer and processor |
+| `notifications/senders/strategies` | Channel-specific behavior |
+| `notifications/senders/providers` | Console, Resend, Twilio and Firebase adapters |
+| `notifications/delivery-tracking` | Delivery attempts and event history |
+| `notifications/webhooks` | Signed Resend and Twilio callbacks |
+| `common/security` | Password hashing with Argon2 and a pepper |
+| `common/authorization` | Role-based access control (`USER` / `ADMIN`) |
+| `config` | Environment validation and Swagger setup |
 
-## Authentication modes
+Application models and response DTOs establish boundaries around persistence and HTTP contracts. Strategies select channels; provider adapters contain vendor-specific calls. The BullMQ worker runs within this NestJS application; the current Compose setup has no separate worker container.
 
-The backend supports both local credentials and Google OAuth 2.0. Both flows end by issuing the same application JWT, so protected endpoints do not need to know which login method was used.
+### Delivery lifecycle
+
+1. `POST /api/notifications` persists an owned notification and queues its first delivery.
+2. BullMQ stores the job in Redis and invokes the worker.
+3. Delivery orchestration creates an attempt and marks processing state.
+4. The dispatcher selects the channel strategy and configured provider.
+5. Provider acceptance records `SENT`, provider details and timestamps.
+6. Resend/Twilio webhooks can record later delivery or failure events.
+7. Provider errors are recorded and rethrown for the queue's retry handling.
+
+`POST /api/notifications/:id/send` queues another explicit attempt. Attempts are stored separately from the notification's current state. `SENT` is provider acceptance, not proof that a person received/read the message. Console providers simulate acceptance locally and do not deliver externally.
+
+## Authentication
 
 ### Local credentials
 
-`POST /api/auth/login` validates email/password through Passport Local and returns the application JWT.
+Register with `POST /api/users`, then authenticate through `POST /api/auth/login`. Use the returned `accessToken` as `Authorization: Bearer <token>`. Swagger's **Authorize** button accepts this token. `GET /api/auth/me` returns the current user. Ownership and authorization are enforced on the backend.
 
 ### Google OAuth 2.0
 
-Google login is optional and disabled by default. Enable it only after creating OAuth credentials in Google Cloud:
+The backend has `/api/auth/google` and `/api/auth/google/callback`, Google profile mapping and state validation. When enabled, the callback currently returns the same token/user JSON used by local login.
 
-```env
-GOOGLE_OAUTH_ENABLED=true
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
-```
+**The browser handoff remains pending.** The frontend callback expects a session, but this backend extracts JWTs from Bearer headers and does not establish that cookie session. Enabling flags alone does not complete browser login. Keep Google disabled for the default challenge evaluation; complete and test the handoff as a separate step.
 
-The callback URL must exactly match an **Authorized redirect URI** configured for the Google OAuth client.
+## Configuration
 
-Flow:
-
-```text
-GET /api/auth/google
-        ↓
-Google login / consent
-        ↓
-GET /api/auth/google/callback
-        ↓
-GoogleStrategy
-        ↓
-AuthService.authenticateGoogle
-        ↓
-UsersService.findOrCreateByExternalIdentity
-        ↓
-existing identity → existing user
-existing email    → link Google identity
-new email         → create OAuth-only user
-        ↓
-AuthService.login
-        ↓
-application JWT
-```
-
-Google access and refresh tokens are not persisted because this project uses Google only for authentication. The redirect flow uses a short-lived, HMAC-signed `state` value to protect the OAuth round trip without introducing server-side HTTP sessions. External identities are stored separately in `user_identities`, which keeps the user model ready for additional providers without adding provider-specific columns to `users`.
-
-OAuth-only users have a nullable `password_hash`; local login rejects those accounts unless a local password is added in a future account-management flow.
-
-## Provider modes
-
-Console providers are the default and are intended for development and automated tests. The previous `EMAIL_PROVIDER=development` value is accepted as a backward-compatible alias for `console`. They exercise the complete queue/delivery/persistence flow without external credentials or billable traffic.
-
-```env
-EMAIL_PROVIDER=console
-SMS_PROVIDER=console
-PUSH_PROVIDER=console
-```
-
-To enable real delivery, select the provider explicitly and configure its credentials.
-
-### Email — Resend
-
-```env
-EMAIL_PROVIDER=resend
-RESEND_API_KEY=re_xxxxxxxxx
-EMAIL_FROM=Notifications <notifications@your-domain.com>
-RESEND_WEBHOOK_SECRET=whsec_xxxxxxxxx
-```
-
-`ResendEmailProvider` uses the official `resend` Node.js package. Delivery events are verified with `RESEND_WEBHOOK_SECRET` at `/api/webhooks/resend` and persisted in the delivery timeline.
-
-### SMS — Twilio
-
-```env
-SMS_PROVIDER=twilio
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_API_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-TWILIO_FROM_NUMBER=+15551234567
-PUBLIC_API_BASE_URL=https://api.example.com
-```
-
-`TwilioSmsProvider` uses Twilio's official Node.js SDK with API Key authentication. Every SMS includes a `StatusCallback` pointing to `${PUBLIC_API_BASE_URL}/api/webhooks/twilio/status`; callbacks are validated with `TWILIO_AUTH_TOKEN`. The notification recipient should be an E.164 phone number.
-
-### Push — Firebase Cloud Messaging
-
-```env
-PUSH_PROVIDER=firebase
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
-```
-
-`FirebasePushProvider` uses Firebase Cloud Messaging HTTP v1. It signs a service-account JWT, exchanges it for a short-lived OAuth 2.0 access token and caches that token until shortly before expiration. The notification recipient is an FCM registration token.
-
-See `.env.providers.example` for notification-provider and Google OAuth integration variables.
-
-## Configuration validation
-
-External integration credentials are conditional:
-
-- `GOOGLE_OAUTH_ENABLED=false` does not require Google credentials.
-- `GOOGLE_OAUTH_ENABLED=true` requires the Google client id, client secret and callback URL.
-- Console notification mode does not require external provider credentials.
-- `EMAIL_PROVIDER=resend` requires `RESEND_API_KEY`, `EMAIL_FROM` and `RESEND_WEBHOOK_SECRET`.
-- `SMS_PROVIDER=twilio` requires the Account SID, API Key SID/Secret, primary Auth Token, sender number and `PUBLIC_API_BASE_URL`.
-- `PUSH_PROVIDER=firebase` requires project ID, service-account email and private key.
-
-Invalid real-provider configuration prevents the application from starting instead of silently falling back to a fake delivery mechanism.
-
-## Modules
-
-| Module | Responsibility |
-| --- | --- |
-| `auth` | Local login, Google OAuth 2.0, JWT and `/auth/me` |
-| `users` | Registration and admin user operations |
-| `notifications` | Owner-scoped CRUD and send endpoint |
-| `notifications/queue` | BullMQ producer and processor |
-| `notifications/senders/strategies` | Channel selection |
-| `notifications/senders/providers` | External provider adapters |
-| `common/authorization` | RBAC / `RolesGuard` |
-| `common/security` | Password hashing |
-
-## Environment variables
-
-The application currently loads the repo-root `.env` (`../.env` from this directory).
-
-Core variables:
+The existing backend and Prisma CLI load the repository root `.env` via `../.env` from the backend directory. Docker injects that root file through Compose. On Render, use service environment variables. This update preserves that layout.
 
 | Variable | Purpose |
 | --- | --- |
-| `PORT` | HTTP port |
-| `ALLOWED_ORIGINS` | CORS origins |
-| `DATABASE_URL` | PostgreSQL connection |
-| `REDIS_URL` | Redis connection |
-| `PASSWORD_PEPPER` | Password pepper (minimum 32 chars) |
-| `JWT_SECRET` | JWT signing secret (minimum 32 chars) |
-| `JWT_EXPIRES_IN_SECONDS` | Access-token TTL |
-| `GOOGLE_OAUTH_ENABLED` | Enables/disables Google login (`false` by default) |
-| `GOOGLE_CLIENT_ID` | Google OAuth client id |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `GOOGLE_CALLBACK_URL` | Backend callback registered in Google Cloud |
+| `PORT` | API listening port; local default `3000` |
+| `ALLOWED_ORIGINS` | Comma-separated allowed frontend origins |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection string |
+| `PASSWORD_PEPPER` | Password pepper, minimum 32 characters |
+| `JWT_SECRET` | JWT signing secret, minimum 32 characters |
+| `JWT_EXPIRES_IN_SECONDS` | Positive token lifetime in seconds |
+| `PUBLIC_API_BASE_URL` | Externally reachable API origin for provider callbacks |
+| `GOOGLE_OAUTH_ENABLED` | `false` in the local demo |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Required when Google OAuth is enabled |
+| `GOOGLE_CALLBACK_URL` | Exact backend callback URL registered with Google |
+| `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD` | Optional local demo account created by the seed |
+| `DEMO_SEED_DATA` | `true` creates the fixed sample notification records |
 
-Provider variables are documented in the Provider modes section above.
+External-provider credentials are conditional. Invalid selected-provider configuration prevents startup instead of silently substituting a console provider. The committed `.env.example` contains development defaults; its demo credentials and example secrets are for local evaluation only.
 
-## Local setup
+### Provider configuration
 
-From the repository root, start PostgreSQL and Redis. Then from this backend directory:
+| Channel | Default | Real provider | Required variables for real provider |
+| --- | --- | --- | --- |
+| Email | `EMAIL_PROVIDER=console` | `resend` | `RESEND_API_KEY`, `EMAIL_FROM`, `RESEND_WEBHOOK_SECRET` |
+| SMS | `SMS_PROVIDER=console` | `twilio` | `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_FROM_NUMBER`, `TWILIO_AUTH_TOKEN`, `PUBLIC_API_BASE_URL` |
+| Push | `PUSH_PROVIDER=console` | `firebase` | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` |
 
-```bash
-npm ci
-npx prisma generate
-npx prisma migrate dev
-npx prisma db seed
-npm run start:dev
+Credential-free local mode:
+
+```dotenv
+EMAIL_PROVIDER=console
+SMS_PROVIDER=console
+PUSH_PROVIDER=console
+GOOGLE_OAUTH_ENABLED=false
 ```
 
-With the root Docker Compose setup, the backend can be built and run in its container instead.
+Firebase private-key format accepted by the provider:
 
-## Scripts
-
-```bash
-npm run start:dev
-npm run build
-npm run lint:check
-npm run test:unit
-npm run test:cov
-npm run test:e2e
-npm run docs
-npm run docs:serve
+```dotenv
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
 
-`npm run docs` generates Compodoc output under `documentation/`. The generated directory is intentionally ignored by Git and Docker; the source JSDoc and Compodoc configuration remain versioned.
+The provider converts literal `\n` sequences to actual line breaks. It obtains and caches a short-lived Google access token and sends via Firebase Cloud Messaging HTTP v1. **This project's payload targets `fid`**, and the frontend's **Use this browser** returns that Firebase Installation ID. Keep both sides aligned instead of substituting another identifier type without changing the contract.
 
-## Main endpoints
+Resend requires a suitable sender identity. Twilio trial restrictions can limit recipients and delivery volume. Browser push additionally needs matching public frontend Firebase configuration and notification permission. Backend credentials alone do not configure the browser.
 
-Bearer authentication is required except registration and authentication entry points.
+## HTTP endpoints
 
-| Method | Path | Description |
+All paths include the `/api` prefix. Protected endpoints require Bearer authentication; resource operations are owner-scoped.
+
+| Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/users` | Register |
-| `POST` | `/api/auth/login` | Local email/password login |
-| `GET` | `/api/auth/google` | Start Google OAuth login |
-| `GET` | `/api/auth/google/callback` | Google OAuth callback; returns application JWT |
-| `GET` | `/api/auth/me` | Current authenticated user |
-| `POST` | `/api/notifications` | Create notification and automatically queue its first delivery |
-| `GET` | `/api/notifications` | Paginated owner-scoped notifications with search, filters and sorting |
-| `GET` | `/api/notifications/:id` | Owned notification detail |
-| `PATCH` | `/api/notifications/:id` | Update owned notification |
-| `POST` | `/api/notifications/:id/send` | Explicitly queue/retry an owned notification |
-| `DELETE` | `/api/notifications/:id` | Delete owned notification |
+| `POST` | `/api/users` | Register a user |
+| `POST` | `/api/auth/login` | Authenticate with email/password |
+| `GET` | `/api/auth/google` | Begin Google provider login, when enabled |
+| `GET` | `/api/auth/google/callback` | Return application token/user after Google authentication |
+| `GET` | `/api/auth/me` | Retrieve current user |
+| `POST` | `/api/notifications` | Create and queue the first delivery |
+| `GET` | `/api/notifications` | Paginated, filtered and sorted list |
+| `GET` | `/api/notifications/dashboard` | Dashboard summary |
+| `GET` | `/api/notifications/:id` | Notification detail |
+| `GET` | `/api/notifications/:id/deliveries` | Delivery history |
+| `PATCH` | `/api/notifications/:id` | Edit notification |
+| `POST` | `/api/notifications/:id/send` | Queue another delivery attempt |
+| `DELETE` | `/api/notifications/:id` | Delete notification |
 
-Example notification:
+Example creation body:
 
 ```json
 {
@@ -246,47 +140,98 @@ Example notification:
 }
 ```
 
-`channel` can be `EMAIL`, `SMS` or `PUSH`. Ownership and delivery state are controlled by the backend.
+Channels: `EMAIL`, `SMS`, `PUSH`. The server controls ownership and delivery state.
 
-The notification list endpoint supports server-side pagination, sorting and filters:
+Example list request:
 
 ```text
 GET /api/notifications?page=1&pageSize=20&sortBy=createdAt&sortDirection=desc&status=SENT&channel=EMAIL&search=welcome
 ```
 
-`page` is one-based, `pageSize` defaults to `20` and is capped at `100`. Search is case-insensitive over `title`, `content` and `recipient`. The response contains `items` plus pagination metadata (`page`, `pageSize`, `totalItems`, `totalPages`, `hasNextPage`, `hasPreviousPage`).
+Pagination is one-based; `pageSize` defaults to 20 and is capped at 100. Search covers title, content and recipient. Responses contain `items` and pagination metadata.
 
-### Provider callback endpoints
+### Provider webhooks
 
-Provider callbacks are intentionally excluded from Swagger because they are signed machine-to-machine endpoints rather than frontend-facing API operations.
+| Method | Path | Verification |
+| --- | --- | --- |
+| `POST` | `/api/webhooks/resend` | Resend signing secret |
+| `POST` | `/api/webhooks/twilio/status` | Twilio signature and configured public URL |
 
-| Method | Path | Provider | Purpose |
-| --- | --- | --- | --- |
-| `POST` | `/api/webhooks/resend` | Resend | Receive and verify email delivery events |
-| `POST` | `/api/webhooks/twilio/status` | Twilio | Receive and verify SMS status callbacks |
+These provider-to-server endpoints remain intentionally excluded from Swagger. Keep the public URL used by the provider aligned with backend validation, including when using a local tunnel.
 
-## Asynchronous delivery
+## Develop the backend outside Docker
 
-1. `POST /api/notifications` persists the notification and immediately enqueues its first delivery job.
-2. BullMQ stores and processes the job through Redis.
-3. `NotificationDeliveryService` creates a delivery attempt and marks the notification `PROCESSING`.
-4. The dispatcher resolves the channel strategy.
-5. The strategy delegates to the configured provider.
-6. Successful provider acceptance persists `SENT`, provider details and `sentAt`.
-7. Resend/Twilio webhooks can later advance tracked deliveries to `DELIVERED` or `FAILED`.
-8. Provider failures persist `FAILED` and are rethrown so BullMQ can apply its retry policy.
-
-`POST /api/notifications/:id/send` remains available as an explicit owner-scoped queue/retry operation. Delivery attempts are persisted independently from the current notification state.
-
-## Tests
-
-Unit tests cover notification orchestration, queues, provider contracts, provider adapters and configuration validation. External-provider unit tests mock network calls; they do not send real Email/SMS/Push messages.
-
-E2E tests use console providers so CI can verify the real HTTP → authentication → queue → Redis → worker → PostgreSQL flow without external credentials.
+Use Node.js 24 and npm. From the repository root, create `.env` from `.env.example` if needed, then start only the data services:
 
 ```bash
+docker compose up -d db redis
+```
+
+For a host-run backend, change these root `.env` connections to `localhost`; the Compose service names `db` and `redis` only resolve inside the container network:
+
+```dotenv
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/notifications
+REDIS_URL=redis://localhost:6379
+```
+
+Stop any Docker backend before using its port locally:
+
+```bash
+docker compose stop backend frontend
+```
+
+Then, from `backend_notifications/`:
+
+```bash
+npm ci
+npx prisma generate
+npx prisma migrate deploy
+npx prisma db seed
+npm run start:dev
+```
+
+`migrate deploy` applies the committed migrations. Use `migrate dev` only when intentionally developing new schema migrations. When returning to Docker, Compose supplies container-network database/Redis URLs.
+
+## Tests and build
+
+Run commands from this backend directory. Prisma Client must be generated first.
+
+```bash
+npm run lint:check
 npm run test:unit
+npm run test:cov
+npm run build
+```
+
+End-to-end tests require PostgreSQL, Redis, migrations and test environment configuration. They exercise HTTP authentication, persistence and asynchronous delivery with console providers.
+
+```bash
 npm run test:e2e
 ```
 
-To manually verify physical delivery, select one real provider in `.env`, restart the backend and create a notification for that channel. Creation automatically queues the first delivery; `/send` remains available for an explicit retry.
+`test/setup-e2e-env.ts` and the CI workflows define the test environment. Use a dedicated test database; do not point end-to-end tests at production data. Unit provider tests mock remote calls and do not send real messages.
+
+### Continuous integration and coverage
+
+- GitHub Actions: `../.github/workflows/main.yml` — lint, unit tests, end-to-end tests and build.
+- CircleCI: `../.circleci/config.yml` — equivalent validation plus coverage upload.
+- [Coveralls](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main) — uploaded backend coverage. The badge reflects the external report, not a locally invented percentage.
+
+## Swagger and Compodoc
+
+Swagger is served by the API at `/api/docs`. Compodoc is generated separately from source and comments:
+
+```bash
+npm run docs
+npm run docs:serve
+```
+
+Output: `documentation/`. Local documentation server: [localhost:8080](http://localhost:8080). The output is ignored by Git and Docker; source comments and `tsconfig.doc.json` remain versioned. `tsconfig.build.json` excludes generated documentation from application compilation.
+
+**Public Compodoc URL: pending.** Publish the generated output as a separate Render Static Site using the [step-by-step guide](../docs/compodoc-render.md). It does not require database or provider credentials.
+
+## Render configuration notes
+
+The backend is already hosted at [notifications-api-karp.onrender.com](https://notifications-api-karp.onrender.com). Keep production secrets in Render's environment settings. Configure `ALLOWED_ORIGINS` to include `https://notifications-frontend.onrender.com`; set the public API origin and Google callback to the deployed host when enabling those integrations.
+
+The supplied Dockerfile targets local development and runs watch mode. These docs do not replace or claim to inspect the existing Render build/start settings. Use the existing service configuration until the deployment workflow is reviewed explicitly.

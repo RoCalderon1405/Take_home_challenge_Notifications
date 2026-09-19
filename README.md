@@ -1,642 +1,421 @@
 <div align="center">
 
-<h1>🔔 Notifications Platform</h1>
+🔔 Notifications Platform
 
-<h2>Full-Stack Notification Management & Delivery System</h2>
+Full-stack take-home challenge
 
-<h3>Email · SMS · Push · Async Processing · Delivery Tracking</h3>
+Build, queue and track Email, SMS and browser Push notifications through interchangeable providers.
 
-<a href="https://portfoliorocalderon.netlify.app/#experience">
-  <img src="https://img.shields.io/badge/Get%20in%20Touch-Roberto%20Tonatiuh%20Calderon%20Aguilar-00C7B7?style=for-the-badge&logo=netlify&logoColor=white" alt="Get in Touch" />
-</a>
+Live application · Swagger API · Coverage · Repository
 
-<br/><br/>
+<br />
 
-<a href="https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main">
-  <img src="https://img.shields.io/coverallsCoverage/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main&style=for-the-badge&logo=coveralls&logoColor=white" alt="Coverage" />
-</a>
-
-<br/>
-
-<img src="https://img.shields.io/badge/Backend-Ready-22C55E?style=for-the-badge" alt="Backend Ready" />
-<img src="https://img.shields.io/badge/Frontend-Ready-22C55E?style=for-the-badge" alt="Frontend Ready" />
-<img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready" />
-<img src="https://img.shields.io/badge/Swagger-Available-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger Available" />
+<img src="https://skillicons.dev/icons?i=ts,nodejs,nestjs,react,vite,materialui,prisma,postgres,redis,docker,firebase" alt="TypeScript, Node.js, NestJS, React, Vite, Material UI, Prisma, PostgreSQL, Redis, Docker and Firebase" />
 
 </div>
 
-🚀 Getting Started with Docker
+What this project demonstrates
 
-The recommended way to run the complete project is with Docker Compose.
-
-You do not need to install PostgreSQL, Redis, Node.js, Prisma, NestJS CLI or Vite locally when using the Docker setup.
-
-Pre-requisites 📋
-
-Windows / macOS
-
-Install:
-
-Git
-
-Docker Desktop
-
-On Windows, Docker Desktop uses WSL 2 as the recommended backend.
-
-After installation, open Docker Desktop and wait until Docker Engine is running.
-
-Verify the installation:
-
-docker --version
-docker compose version
-git --version
-
-All three commands should return a valid version.
-
-Linux
-
-Install:
-
-Git
-
-Docker Engine
-
-Docker Compose plugin
-
-Then verify:
-
-docker --version
-docker compose version
-git --version
-
-Required Ports 🔌
-
-The following ports must be available before starting the stack:
-
-<table align="center" width="72%">
-  <thead>
-    <tr>
-      <th>Port</th>
-      <th>Service</th>
-      <th>Required</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td><code>3000</code></td><td>⚙️ NestJS REST API</td><td>✅ Yes</td></tr>
-    <tr><td><code>5173</code></td><td>🌐 React / Vite Frontend</td><td>✅ Yes</td></tr>
-    <tr><td><code>5432</code></td><td>🐘 PostgreSQL</td><td>✅ Yes</td></tr>
-    <tr><td><code>6379</code></td><td>🔴 Redis</td><td>✅ Yes</td></tr>
-    <tr><td><code>8080</code></td><td>📚 Compodoc</td><td>Only when serving docs</td></tr>
-  </tbody>
+<table>
+<tr>
+<td width="33%" valign="top">
+<h3>⚡ Asynchronous delivery</h3>
+<p>BullMQ and Redis move provider work outside the HTTP request and support delivery retries and tracking.</p>
+</td>
+<td width="33%" valign="top">
+<h3>🔌 Extensible providers</h3>
+<p>Strategy, Registry and Adapter patterns isolate Resend, Twilio, Firebase and console implementations.</p>
+</td>
+<td width="33%" valign="top">
+<h3>🧱 Clean boundaries</h3>
+<p>DTOs, application models and mappers keep controllers and business flows decoupled from Prisma and vendor SDKs.</p>
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+<h3>🔐 Complete authentication</h3>
+<p>Email/password and Google OAuth 2.0 sign-in issue the same application JWT and protect owner-scoped resources.</p>
+</td>
+<td width="33%" valign="top">
+<h3>🧪 Automated quality</h3>
+<p>Unit and end-to-end tests, linting, production builds, GitHub Actions, CircleCI and Coveralls.</p>
+</td>
+<td width="33%" valign="top">
+<h3>🚀 Reproducible delivery</h3>
+<p>Docker Compose starts the complete stack, while Render publishes the frontend and backend through CI/CD.</p>
+</td>
+</tr>
 </table>
 
-Check ports on Windows
+[!NOTE]
+The codebase follows SOLID principles and uses boundaries inspired by Clean Architecture. The goal is practical separation and extensibility without turning a take-home challenge into unnecessary infrastructure.
 
-netstat -ano | findstr :3000
-netstat -ano | findstr :5173
-netstat -ano | findstr :5432
-netstat -ano | findstr :6379
+Try the hosted application
 
-If a command returns no result, the port is normally available.
+Service
 
-Check ports on Linux / macOS
+Public URL
 
-lsof -i :3000
-lsof -i :5173
-lsof -i :5432
-lsof -i :6379
+Frontend
 
-Installation 🔧
+notifications-frontend.onrender.com
 
-<table align="center" width="92%">
-  <tr>
-    <td align="center" width="25%">
-      <h1>1️⃣</h1>
-      <strong>Clone</strong><br/><br/>
-      Get the repository
-    </td>
-    <td align="center" width="25%">
-      <h1>2️⃣</h1>
-      <strong>Configure</strong><br/><br/>
-      Create the environment file
-    </td>
-    <td align="center" width="25%">
-      <h1>3️⃣</h1>
-      <strong>Run</strong><br/><br/>
-      Start the complete stack
-    </td>
-    <td align="center" width="25%">
-      <h1>4️⃣</h1>
-      <strong>Verify</strong><br/><br/>
-      Confirm all services
-    </td>
-  </tr>
-</table>
+Backend
 
-1️⃣ Clone the repository
+notifications-api-karp.onrender.com
 
-git clone https://github.com/RoCalderon1405/Take_home_challenge_Notifications.git
-cd Take_home_challenge_Notifications
+Swagger / OpenAPI
 
-2️⃣ Create the environment file
+notifications-api-karp.onrender.com/api/docs
 
-Windows CMD
+Coverage
 
-copy .env.example .env
+Coveralls report
 
-PowerShell
+Compodoc
 
-Copy-Item .env.example .env
+Pending publication — Render guide
 
-Linux / macOS
+[!IMPORTANT]
+The backend uses a free Render instance. After inactivity, its first request can take 50 seconds or more while the service starts. Open Swagger and wait for it to respond before evaluating the frontend. This delay does not affect the local Docker environment.
+
+Run everything locally
+
+Requirements
+
+Docker Desktop with Linux containers, or Docker Engine with Docker Compose v2.
+
+Free ports: 3000, 5173, 5432 and 6379.
+
+Internet access for the first build.
+
+No local Node.js, PostgreSQL or Redis installation is required.
+
+1. Prepare the environment
+
+Create the root .env once from the supplied example and adjust it only if needed.
 
 cp .env.example .env
 
-The default local configuration is designed to use console providers, so third-party credentials are not required for the basic evaluation flow.
+On Windows you can copy the file from Explorer or use the PowerShell helper shown below.
 
-3️⃣ Start the complete stack
+2. Start the complete stack
 
-docker compose up --build
+docker compose up --build --wait
 
-On the first run Docker may take a few minutes while it downloads images and installs dependencies.
+That command starts:
 
-The Docker-ready startup flow is:
+Container
 
-PostgreSQL + Healthcheck
-│
-▼
-Redis + Healthcheck
-│
-▼
-Prisma Client Generation
-│
-▼
-Database Migrations
-│
-▼
-Database Seed
-│
-▼
-NestJS API
-│
-▼
-React / Vite Frontend
+Port
 
-4️⃣ Verify the services
+Responsibility
 
-Open another terminal from the repository root:
+Frontend
+
+5173
+
+React application
+
+Backend
+
+3000
+
+NestJS REST API and notification worker
+
+PostgreSQL
+
+5432
+
+Users, notifications and delivery attempts
+
+Redis
+
+6379
+
+BullMQ jobs and queue state
+
+During startup, the backend generates the Prisma client, applies migrations, loads the seed and waits for its dependencies to become healthy.
+
+Optional one-command helpers
+
+The helpers create .env only when it is missing and preserve any existing provider configuration.
+
+Windows — PowerShell
+
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+
+macOS / Linux — Bash
+
+bash ./start.sh
+
+Open the services
+
+Frontend http://localhost:5173
+Backend http://localhost:3000/api
+Swagger http://localhost:3000/api/docs
+PostgreSQL localhost:5432
+Redis localhost:6379
+
+Default local account:
+
+Email: demo@notifications.local
+Password: Demo1234!
+
+The account and sample notifications are generated by the local seed. They are for local evaluation and do not guarantee access to the hosted environment.
+
+What you can evaluate
+
+Area
+
+Available behavior
+
+Authentication
+
+Email/password login, Google OAuth 2.0, JWT Bearer authorization and role checks
+
+Notifications
+
+Create, search, filter, sort, edit, delete and resend owner-scoped notifications
+
+Channels
+
+Email, SMS and browser Push
+
+Providers
+
+Console adapters, Resend, Twilio and Firebase
+
+Delivery
+
+Queued processing, retries, persisted attempts and provider references
+
+Webhooks
+
+Signed Resend and Twilio events update delivery status
+
+Frontend
+
+Responsive React interface, light/dark preferences and English/Spanish language switching
+
+API
+
+Protected endpoints, request validation and interactive Swagger documentation
+
+Suggested evaluation flow
+
+1. Sign in with the demo account or Google.
+2. Switch the interface between English and Spanish.
+3. Review the dashboard and notification list.
+4. Create an Email, SMS or Push notification.
+5. Open its detail page and inspect the delivery attempt.
+6. Select "Send again" and confirm that a new attempt appears.
+7. Explore the protected API from Swagger.
+
+[!TIP]
+The default Docker environment uses console providers. It exercises validation, PostgreSQL persistence, BullMQ processing and delivery tracking without requiring external credentials or sending real messages.
+
+Architecture
+
+flowchart TD
+UI[React frontend] --> API[NestJS API]
+API --> DB[(PostgreSQL)]
+API --> Q[(Redis / BullMQ)]
+Q --> W[Notification worker]
+W --> R[Strategy registry]
+R --> S[Email / SMS / Push strategy]
+S --> A[Provider adapter]
+A --> P[Resend / Twilio / Firebase]
+P --> WH[Signed webhook]
+WH --> API
+
+The API validates and persists a notification, then places its delivery in BullMQ. The worker resolves a channel strategy from the registry and delegates the provider-specific operation to an adapter.
+
+Why the provider layer is extensible
+
+NotificationDispatcher
+└── NotificationSenderRegistry
+├── EmailSenderStrategy ──> EmailProvider ──> Console | Resend
+├── SmsSenderStrategy ──> SmsProvider ──> Console | Twilio
+└── PushSenderStrategy ──> PushProvider ──> Console | Firebase
+
+The orchestration depends on contracts instead of vendor SDKs. To integrate another provider into an existing channel:
+
+Implement the corresponding provider contract.
+
+Register the implementation through NestJS dependency injection.
+
+Add its validated configuration.
+
+The notification lifecycle, queue and tracking logic remain unchanged. This is where the project applies runtime polymorphism, the Strategy Pattern, the Adapter Pattern and the Open/Closed Principle.
+
+A SENT state means that the provider accepted the request. Final delivery is tracked independently when status events or webhooks are available.
+
+Repository structure
+
+.
+├── backend_notifications/ # NestJS, Prisma, BullMQ and provider integrations
+│ └── README.md # Backend architecture and development guide
+├── frontend_notifications/ # React, Vite, Material UI, OAuth, i18n and Push
+│ └── README.md # Frontend architecture and development guide
+├── docs/
+│ └── compodoc-render.md # Compodoc publication guide
+├── docker-compose.yml # Complete local environment
+├── start.ps1 # Windows startup helper
+└── start.sh # macOS/Linux startup helper
+
+Development commands
+
+<details>
+<summary><strong>🐳 Docker commands</strong></summary>
+
+Show service status:
 
 docker compose ps
 
-You should see the application services running:
+Follow application logs:
 
-notifications-db
-notifications-redis
-notifications-backend
-notifications-frontend
+docker compose logs -f backend frontend
 
-Application URLs 🌐
-
-<table align="center" width="72%">
-  <thead>
-    <tr>
-      <th>Service</th>
-      <th>Address</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td>🌐 <strong>Frontend</strong></td><td><code>http://localhost:5173</code></td></tr>
-    <tr><td>⚙️ <strong>REST API</strong></td><td><code>http://localhost:3000/api</code></td></tr>
-    <tr><td>📘 <strong>Swagger</strong></td><td><code>http://localhost:3000/api/docs</code></td></tr>
-    <tr><td>🐘 <strong>PostgreSQL</strong></td><td><code>localhost:5432</code></td></tr>
-    <tr><td>🔴 <strong>Redis</strong></td><td><code>localhost:6379</code></td></tr>
-  </tbody>
-</table>
-
-Demo Account 👤
-
-<table align="center" width="48%">
-  <tr>
-    <td align="center">
-      <h2>Ready to use after seed</h2>
-      <strong>Email</strong><br/>
-      <code>demo@notifications.local</code>
-      <br/><br/>
-      <strong>Password</strong><br/>
-      <code>Demo1234!</code>
-    </td>
-  </tr>
-</table>
-
-💡 No third-party credentials are required for local evaluation.
-The Docker environment uses console providers by default, so Resend, Twilio, Firebase and Google OAuth credentials are optional.
-
-Useful Docker Commands 🐳
-
-Follow all logs
-
-docker compose logs -f
-
-Backend logs
-
-docker compose logs -f backend
-
-Frontend logs
-
-docker compose logs -f frontend
-
-PostgreSQL logs
-
-docker compose logs -f db
-
-Redis logs
-
-docker compose logs -f redis
-
-Stop the application
+Stop the stack and retain its volumes:
 
 docker compose down
 
-This keeps the PostgreSQL and Redis volumes.
+Start it again without rebuilding:
 
-Full reset
+docker compose up -d --wait
 
-docker compose down -v
-docker compose up --build
+Develop with source synchronization:
 
-Use this when you want to recreate the databases and execute the seed again.
+docker compose up --build --watch
 
-Rebuild without Docker cache
+Rebuild after dependency or configuration changes:
 
-docker compose build --no-cache
-docker compose up
+docker compose up -d --build --force-recreate --wait
 
-🧰 Tech Stack
+</details>
 
-<div align="center">
-
-<img src="https://skillicons.dev/icons?i=nodejs" width="82" alt="Node.js" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=ts" width="82" alt="TypeScript" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=nestjs" width="82" alt="NestJS" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=react" width="82" alt="React" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=vite" width="82" alt="Vite" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=prisma" width="82" alt="Prisma" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=postgres" width="82" alt="PostgreSQL" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=redis" width="82" alt="Redis" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=docker" width="82" alt="Docker" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=firebase" width="82" alt="Firebase" />
-&nbsp;&nbsp;
-<img src="https://skillicons.dev/icons?i=githubactions" width="82" alt="GitHub Actions" />
-
-<br/><br/>
-
-<img src="https://img.shields.io/badge/Resend-Email-000000?style=for-the-badge" alt="Resend" />
-<img src="https://img.shields.io/badge/Twilio-SMS-F22F46?style=for-the-badge&logo=twilio&logoColor=white" alt="Twilio" />
-<img src="https://img.shields.io/badge/BullMQ-Queues-EF4444?style=for-the-badge" alt="BullMQ" />
-<img src="https://img.shields.io/badge/Swagger-OpenAPI-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="Swagger" />
-
-</div>
-
-🔗 Quick Links
-
-<table align="center" width="78%">
-  <thead>
-    <tr>
-      <th>Resource</th>
-      <th>Local</th>
-      <th>Production</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>🌐 <strong>Frontend</strong></td>
-      <td><a href="http://localhost:5173">Open App</a></td>
-      <td>🚧 Pending deployment</td>
-    </tr>
-    <tr>
-      <td>⚙️ <strong>REST API</strong></td>
-      <td><a href="http://localhost:3000/api">Open API</a></td>
-      <td>🚧 Pending deployment</td>
-    </tr>
-    <tr>
-      <td>📘 <strong>Swagger / OpenAPI</strong></td>
-      <td><a href="http://localhost:3000/api/docs">Open Swagger</a></td>
-      <td>🚧 Pending deployment</td>
-    </tr>
-    <tr>
-      <td>📚 <strong>Compodoc</strong></td>
-      <td><a href="http://localhost:8080">Open Docs</a></td>
-      <td>🚧 Pending deployment</td>
-    </tr>
-    <tr>
-      <td>📊 <strong>Coverage</strong></td>
-      <td>—</td>
-      <td><a href="https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main">View Coveralls</a></td>
-    </tr>
-  </tbody>
-</table>
-
-📌 Project Overview
-
-Notifications Platform is a full-stack notification management system designed to create, process, send and track notifications through multiple delivery channels.
-
-Authenticated users work only with their own notifications, while delivery is decoupled from HTTP requests through BullMQ + Redis and processed asynchronously by background workers.
-
-The platform supports Email, SMS and Push delivery, real provider integrations, delivery status tracking, webhooks, dashboard metrics, authentication and API documentation.
-
-🏗️ Architecture
-
-<div align="center">
-
-<pre>
-                         ┌─────────────────────┐
-                         │    React + Vite     │
-                         │      Frontend       │
-                         └──────────┬──────────┘
-                                    │
-                                    │ HTTP / REST
-                                    ▼
-                         ┌─────────────────────┐
-                         │      NestJS API     │
-                         │ Auth · Users · JWT  │
-                         │ Notifications       │
-                         │ Swagger / OpenAPI   │
-                         └─────┬────────┬──────┘
-                               │        │
-                 ┌─────────────┘        └──────────────┐
-                 ▼                                     ▼
-        ┌─────────────────┐                   ┌─────────────────┐
-        │   PostgreSQL    │                   │      Redis      │
-        │   Prisma ORM    │                   │   BullMQ Queue  │
-        │ Users           │                   │ Jobs / Workers  │
-        │ Notifications   │                   └────────┬────────┘
-        │ Deliveries      │                            │
-        └─────────────────┘                            ▼
-                                          ┌─────────────────────┐
-                                          │ Notification Worker │
-                                          └──────────┬──────────┘
-                                                     │
-                             ┌───────────────────────┼──────────────────────┐
-                             ▼                       ▼                      ▼
-                       ┌───────────┐           ┌───────────┐         ┌───────────┐
-                       │   EMAIL   │           │    SMS    │         │   PUSH    │
-                       │  Resend   │           │  Twilio   │         │ Firebase  │
-                       └───────────┘           └───────────┘         └───────────┘
-</pre>
-
-<strong>Notifications are processed asynchronously through BullMQ and Redis.</strong>
-
-</div>
-
-✨ Features
-
-<table align="center" width="92%">
-  <tr>
-    <td align="center" width="33%">
-      <h1>🔐</h1>
-      <img src="https://img.shields.io/badge/Authentication-JWT%20%2B%20Google%20OAuth-4F46E5?style=for-the-badge" alt="Authentication" />
-    </td>
-    <td align="center" width="33%">
-      <h1>📨</h1>
-      <img src="https://img.shields.io/badge/Multi--Channel-Email%20%7C%20SMS%20%7C%20Push-0EA5E9?style=for-the-badge" alt="Multi-Channel" />
-    </td>
-    <td align="center" width="33%">
-      <h1>⚡</h1>
-      <img src="https://img.shields.io/badge/Async%20Delivery-BullMQ%20%2B%20Redis-EF4444?style=for-the-badge" alt="Async Delivery" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <h1>🗃️</h1>
-      <img src="https://img.shields.io/badge/Persistence-PostgreSQL%20%2B%20Prisma-336791?style=for-the-badge" alt="Persistence" />
-    </td>
-    <td align="center">
-      <h1>📊</h1>
-      <img src="https://img.shields.io/badge/Dashboard-Metrics%20%2B%20Recent%20Activity-16A34A?style=for-the-badge" alt="Dashboard" />
-    </td>
-    <td align="center">
-      <h1>🔄</h1>
-      <img src="https://img.shields.io/badge/Delivery%20Tracking-Webhooks%20%2B%20Provider%20Status-F59E0B?style=for-the-badge" alt="Delivery Tracking" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <h1>📖</h1>
-      <img src="https://img.shields.io/badge/Documentation-Swagger%20%2B%20Compodoc-85EA2D?style=for-the-badge" alt="Documentation" />
-    </td>
-    <td align="center">
-      <h1>🐳</h1>
-      <img src="https://img.shields.io/badge/Docker%20Ready-One--Command%20Environment-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready" />
-    </td>
-    <td align="center">
-      <h1>✅</h1>
-      <img src="https://img.shields.io/badge/Automated%20Testing-Unit%20%2B%20E2E-22C55E?style=for-the-badge" alt="Automated Testing" />
-    </td>
-  </tr>
-</table>
-
-🔧 Environment & Providers
-
-<table align="center" width="74%">
-  <thead>
-    <tr>
-      <th>Channel</th>
-      <th>Local / Docker</th>
-      <th>Real Provider</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr><td>📧 Email</td><td>Console</td><td>Resend</td></tr>
-    <tr><td>📱 SMS</td><td>Console</td><td>Twilio</td></tr>
-    <tr><td>🔔 Push</td><td>Console</td><td>Firebase Cloud Messaging</td></tr>
-    <tr><td>🔐 OAuth</td><td>Disabled</td><td>Google OAuth 2.0</td></tr>
-  </tbody>
-</table>
-
-Default local configuration:
-
-EMAIL_PROVIDER=console
-SMS_PROVIDER=console
-PUSH_PROVIDER=console
-GOOGLE_OAUTH_ENABLED=false
-
-Provider-specific environment variables are documented in:
-
-backend_notifications/.env.providers.example
-
-⚙️ Running the Tests
-
-The project contains automated backend and frontend validation so changes can be checked before deployment.
-
-<table align="center" width="86%">
-  <tr>
-    <td align="center" width="50%">
-      <h1>🧪</h1>
-      <strong>Backend</strong><br/><br/>
-      Lint · Unit · E2E · Coverage · Build
-    </td>
-    <td align="center" width="50%">
-      <h1>⚛️</h1>
-      <strong>Frontend</strong><br/><br/>
-      Lint · Unit · Component · Build
-    </td>
-  </tr>
-</table>
-
-Backend Tests 🔩
+<details>
+<summary><strong>🧪 Backend quality checks</strong></summary>
 
 cd backend_notifications
 npm ci
-npm run lint:check
-npm run test:unit
+npm run lint
+npm test
 npm run test:e2e
-npm run test:cov
 npm run build
 
-Frontend Tests 🧩
+</details>
+
+<details>
+<summary><strong>⚛️ Frontend quality checks</strong></summary>
 
 cd frontend_notifications
 npm ci
 npm run lint
-npm run test
+npm test
 npm run build
 
-📦 Deployment
+</details>
 
-<div align="center">
+<details>
+<summary><strong>🛠️ Troubleshooting</strong></summary>
 
-<img src="https://img.shields.io/badge/GitHub_Actions-CI-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="GitHub Actions" />
-<img src="https://img.shields.io/coverallsCoverage/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main&style=for-the-badge&logo=coveralls&logoColor=white" alt="Coveralls" />
-<img src="https://img.shields.io/badge/Render-Deployment%20Pending-46E3B7?style=for-the-badge&logo=render&logoColor=black" alt="Render" />
+Problem
 
-<br/><br/>
+What to check
 
-<pre>
-                         Pull Request
-                              │
-                              ▼
-                       GitHub Actions
-                              │
-                 ┌────────────┼────────────┐
-                 ▼            ▼            ▼
-                Lint        Tests         Build
-                              │
-                              ▼
-                          Coveralls
-                              │
-                              ▼
-                             main
-                              │
-                              ▼
-                            Render
-</pre>
+Docker cannot connect
 
-</div>
+Start Docker Desktop or Docker Engine and try again
 
-The production deployment target is Render.
+Port already allocated
 
-Planned production services:
+Stop the conflicting process or update every related URL and port consistently
 
-React / Vite frontend
+Backend health check fails
 
-NestJS API
+Run docker compose logs --tail=100 backend and verify PostgreSQL and Redis
 
-PostgreSQL
+Provider configuration fails
 
-Redis-compatible service
+Review the existing .env; startup helpers never overwrite it
 
-Compodoc static documentation
+Google login fails
 
-📚 Documentation
+Verify client credentials, authorized origins and callback URLs for the current environment
 
-<table align="center" width="82%">
-  <tr>
-    <td align="center" width="50%">
-      <h1>📘</h1>
-      <strong>Swagger / OpenAPI</strong><br/><br/>
-      Public REST API documentation<br/><br/>
-      <a href="http://localhost:3000/api/docs">Open Swagger</a>
-    </td>
-    <td align="center" width="50%">
-      <h1>📚</h1>
-      <strong>Compodoc</strong><br/><br/>
-      Internal NestJS / TypeScript documentation<br/><br/>
-      <a href="http://localhost:8080">Open Compodoc</a>
-    </td>
-  </tr>
+</details>
+
+Quality and delivery
+
+<table>
+<tr>
+<td width="50%" valign="top">
+<h3>Continuous Integration</h3>
+<ul>
+<li>GitHub Actions: lint, unit tests, E2E tests and backend build.</li>
+<li>CircleCI: backend validation and coverage upload.</li>
+<li>Coveralls: coverage history for the main branch.</li>
+</ul>
+</td>
+<td width="50%" valign="top">
+<h3>Continuous Delivery</h3>
+<ul>
+<li>Render hosts the frontend and backend independently.</li>
+<li>Services deploy from their configured repository branch.</li>
+<li>Secrets remain in the deployment environment.</li>
+</ul>
+</td>
+</tr>
 </table>
 
-Swagger / OpenAPI 📘
+The current automated workflows focus primarily on the backend. Frontend lint, test and production build commands are available locally and documented in its guide.
 
-http://localhost:3000/api/docs
+Documentation
 
-Swagger documents the public REST API and supports JWT Bearer authentication for protected endpoints.
+<table>
+<tr>
+<td width="50%" valign="top">
+<h3>⚛️ Frontend</h3>
+<p>Pages, state management, Google OAuth, internationalization, API client, Push notifications, testing and Render deployment.</p>
+<p><a href="frontend_notifications/README.md"><strong>Open frontend guide →</strong></a></p>
+</td>
+<td width="50%" valign="top">
+<h3>🛡️ Backend</h3>
+<p>Modules, authentication, Prisma, queues, provider strategies, webhooks, testing, configuration and deployment.</p>
+<p><a href="backend_notifications/README.md"><strong>Open backend guide →</strong></a></p>
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+<h3>📘 Swagger</h3>
+<p>Interactive REST API documentation, schemas and Bearer authentication.</p>
+<p><a href="https://notifications-api-karp.onrender.com/api/docs"><strong>Open Swagger →</strong></a></p>
+</td>
+<td width="50%" valign="top">
+<h3>📚 Compodoc</h3>
+<p>Generated backend source documentation. Its public link will be added after the Render Static Site is deployed.</p>
+<p><a href="docs/compodoc-render.md"><strong>Open publication guide →</strong></a></p>
+</td>
+</tr>
+</table>
 
-Compodoc 📚
+Preview before committing
 
-cd backend_notifications
-npm run docs
-npm run docs:serve
+Open README.md in VS Code and press:
 
-Then open:
+Ctrl + K, then V
 
-http://localhost:8080
+This opens the Markdown preview beside the editor. GitHub remains the final reference for badges, Mermaid diagrams and HTML cards.
 
-🛠️ Built With
-
-NestJS — Backend application framework
-
-React + Vite — Frontend application
-
-TypeScript — Shared development language
-
-Prisma ORM — Database access and migrations
-
-PostgreSQL — Persistent relational storage
-
-Redis + BullMQ — Queueing and asynchronous processing
-
-Resend — Email delivery
-
-Twilio — SMS delivery
-
-Firebase Cloud Messaging — Push delivery
-
-Docker — Local containerized environment
-
-Swagger / OpenAPI — Public API documentation
-
-Compodoc — Internal technical documentation
-
-GitHub Actions + Coveralls — CI and coverage reporting
-
-✒️ Author
+Author
 
 <div align="center">
 
-<h2>Roberto Tonatiuh Calderon Aguilar</h2>
+Roberto Tonatiuh Calderon Aguilar<br />
+Full Stack Developer
 
-<h3>Full Stack Developer</h3>
-
-<a href="https://portfoliorocalderon.netlify.app/#experience">
-  <img src="https://img.shields.io/badge/Get%20in%20Touch-Portfolio-00C7B7?style=for-the-badge&logo=netlify&logoColor=white" alt="Portfolio" />
-</a>
-
-<a href="https://github.com/RoCalderon1405">
-  <img src="https://img.shields.io/badge/GitHub-RoCalderon1405-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" />
-</a>
-
-<br/><br/>
-
-Built with NestJS · React · PostgreSQL · Redis · Docker
+GitHub · Portfolio · Repository
 
 </div>

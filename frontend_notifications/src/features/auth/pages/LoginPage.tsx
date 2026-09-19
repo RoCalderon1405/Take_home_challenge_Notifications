@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useMemo, useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Box,
   Card,
@@ -9,23 +9,23 @@ import {
   Stack,
   TextField,
   Typography,
-} from '@mui/material';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import GoogleIcon from '@mui/icons-material/Google';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { z } from 'zod';
+} from "@mui/material";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import GoogleIcon from "@mui/icons-material/Google";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { Navigate, useNavigate } from "react-router-dom";
+import { z } from "zod";
 
-import { useAppDispatch, useAppSelector } from '../../../app/store';
-import { setAuthenticatedUser } from '../../../app/store/auth.slice';
-import { env } from '../../../config/env';
-import { ApiError } from '../../../core/api';
-import { tokenStorage } from '../../../core/auth/token-storage';
-import { AppButton } from '../../../shared/components/AppButton';
-import { authApi } from '../api/auth.api';
-import { userMapper } from '../mappers/user.mapper';
+import { useAppDispatch, useAppSelector } from "../../../app/store";
+import { setAuthenticatedUser } from "../../../app/store/auth.slice";
+import { env } from "../../../config/env";
+import { ApiError } from "../../../core/api";
+import { tokenStorage } from "../../../core/auth/token-storage";
+import { AppButton } from "../../../shared/components/AppButton";
+import { authApi } from "../api/auth.api";
+import { userMapper } from "../mappers/user.mapper";
 
 interface LoginFormValues {
   email: string;
@@ -42,8 +42,8 @@ export function LoginPage() {
   const schema = useMemo(
     () =>
       z.object({
-        email: z.string().email(t('auth.invalidEmail')),
-        password: z.string().min(1, t('auth.passwordRequired')),
+        email: z.string().email(t("auth.invalidEmail")),
+        password: z.string().min(1, t("auth.passwordRequired")),
       }),
     [t],
   );
@@ -55,8 +55,8 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
@@ -71,11 +71,9 @@ export function LoginPage() {
       const response = await authApi.login(values);
       tokenStorage.set(response.accessToken);
       dispatch(setAuthenticatedUser(userMapper.toModel(response.user)));
-      navigate('/dashboard', { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (error: unknown) {
-      setApiError(
-        error instanceof ApiError ? error.message : t('errors.auth'),
-      );
+      setApiError(error instanceof ApiError ? error.message : t("errors.auth"));
     }
   });
 
@@ -84,37 +82,38 @@ export function LoginPage() {
   };
 
   const googleNeedsCookieFlow =
-    env.googleOAuthEnabled && env.authTransport === 'bearer';
+    env.googleOAuthEnabled && env.authTransport === "bearer";
+
 
   return (
     <Card
       elevation={0}
       sx={{
-        width: '100%',
+        width: "100%",
         maxWidth: 520,
         borderRadius: 5,
-        border: '1px solid rgba(46, 111, 214, 0.12)',
-        boxShadow: '0 28px 80px rgba(54, 105, 166, 0.18)',
-        bgcolor: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(18px)',
+        border: "1px solid rgba(46, 111, 214, 0.12)",
+        boxShadow: "0 28px 80px rgba(54, 105, 166, 0.18)",
+        bgcolor: "rgba(255,255,255,0.92)",
+        backdropFilter: "blur(18px)",
       }}
     >
       <CardContent sx={{ p: { xs: 3.5, sm: 5 } }}>
         <Stack spacing={3.25}>
-          <Box sx={{ textAlign: 'center' }}>
+          <Box sx={{ textAlign: "center" }}>
             <Typography
               component="h1"
               sx={{
-                color: '#0b1f44',
-                fontSize: { xs: '1.9rem', sm: '2.15rem' },
+                color: "#0b1f44",
+                fontSize: { xs: "1.9rem", sm: "2.15rem" },
                 fontWeight: 800,
-                letterSpacing: '-0.035em',
+                letterSpacing: "-0.035em",
               }}
             >
-              {t('auth.welcomeBack')}
+              {t("auth.welcomeBack")}
             </Typography>
-            <Typography sx={{ mt: 0.75, color: '#6f7f9f' }}>
-              {t('auth.subtitle')}
+            <Typography sx={{ mt: 0.75, color: "#6f7f9f" }}>
+              {t("auth.subtitle")}
             </Typography>
           </Box>
 
@@ -125,10 +124,10 @@ export function LoginPage() {
                 borderRadius: 2.5,
                 px: 2,
                 py: 1.25,
-                bgcolor: '#fff1f2',
-                color: '#b42318',
-                border: '1px solid #fecdd3',
-                fontSize: '0.9rem',
+                bgcolor: "#fff1f2",
+                color: "#b42318",
+                border: "1px solid #fecdd3",
+                fontSize: "0.9rem",
               }}
             >
               {apiError}
@@ -138,7 +137,7 @@ export function LoginPage() {
           <Box component="form" onSubmit={onSubmit} noValidate>
             <Stack spacing={2.4}>
               <TextField
-                label={t('auth.email')}
+                label={t("auth.email")}
                 type="email"
                 autoComplete="email"
                 fullWidth
@@ -148,16 +147,18 @@ export function LoginPage() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailOutlinedIcon sx={{ color: '#6f7f9f', fontSize: 20 }} />
+                        <EmailOutlinedIcon
+                          sx={{ color: "#6f7f9f", fontSize: 20 }}
+                        />
                       </InputAdornment>
                     ),
                   },
                 }}
                 sx={loginFieldSx}
-                {...register('email')}
+                {...register("email")}
               />
               <TextField
-                label={t('auth.password')}
+                label={t("auth.password")}
                 type="password"
                 autoComplete="current-password"
                 fullWidth
@@ -167,13 +168,15 @@ export function LoginPage() {
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LockOutlinedIcon sx={{ color: '#6f7f9f', fontSize: 20 }} />
+                        <LockOutlinedIcon
+                          sx={{ color: "#6f7f9f", fontSize: 20 }}
+                        />
                       </InputAdornment>
                     ),
                   },
                 }}
                 sx={loginFieldSx}
-                {...register('password')}
+                {...register("password")}
               />
               <AppButton
                 type="submit"
@@ -183,14 +186,16 @@ export function LoginPage() {
                 sx={{
                   minHeight: 52,
                   borderRadius: 2.5,
-                  background: 'linear-gradient(135deg, #2c72f6 0%, #2a87ff 100%)',
-                  fontSize: '1rem',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #205fd7 0%, #1976ed 100%)',
+                  background:
+                    "linear-gradient(135deg, #2c72f6 0%, #2a87ff 100%)",
+                  fontSize: "1rem",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #205fd7 0%, #1976ed 100%)",
                   },
                 }}
               >
-                {t('auth.signIn')}
+                {t("auth.signIn")}
               </AppButton>
             </Stack>
           </Box>
@@ -199,12 +204,14 @@ export function LoginPage() {
             <>
               <Divider
                 sx={{
-                  color: '#91a0ba',
-                  '&::before, &::after': { borderColor: 'rgba(111,127,159,0.2)' },
+                  color: "#91a0ba",
+                  "&::before, &::after": {
+                    borderColor: "rgba(111,127,159,0.2)",
+                  },
                 }}
               >
-                {t('auth.divider')}
-              </Divider>
+                {t("auth.divider")}
+              </Divider>{" "}
               <AppButton
                 variant="outlined"
                 startIcon={<GoogleIcon />}
@@ -214,16 +221,16 @@ export function LoginPage() {
                 sx={{
                   minHeight: 50,
                   borderRadius: 2.5,
-                  borderColor: 'rgba(111,127,159,0.28)',
-                  color: '#172b4d',
-                  bgcolor: '#fff',
-                  '&:hover': {
-                    borderColor: '#2c72f6',
-                    bgcolor: '#f8fbff',
+                  borderColor: "rgba(111,127,159,0.28)",
+                  color: "#172b4d",
+                  bgcolor: "#fff",
+                  "&:hover": {
+                    borderColor: "#2c72f6",
+                    bgcolor: "#f8fbff",
                   },
                 }}
               >
-                {t('auth.continueGoogle')}
+                {t("auth.continueGoogle")}
               </AppButton>
             </>
           )}
@@ -234,22 +241,22 @@ export function LoginPage() {
 }
 
 const loginFieldSx = {
-  '& .MuiInputLabel-root': {
-    color: '#52617d',
+  "& .MuiInputLabel-root": {
+    color: "#52617d",
   },
-  '& .MuiOutlinedInput-root': {
+  "& .MuiOutlinedInput-root": {
     minHeight: 54,
     borderRadius: 2.5,
-    color: '#0b1f44',
-    bgcolor: 'rgba(250,252,255,0.92)',
-    '& fieldset': {
-      borderColor: 'rgba(111,127,159,0.25)',
+    color: "#0b1f44",
+    bgcolor: "rgba(250,252,255,0.92)",
+    "& fieldset": {
+      borderColor: "rgba(111,127,159,0.25)",
     },
-    '&:hover fieldset': {
-      borderColor: 'rgba(44,114,246,0.48)',
+    "&:hover fieldset": {
+      borderColor: "rgba(44,114,246,0.48)",
     },
-    '&.Mui-focused fieldset': {
-      borderColor: '#2c72f6',
+    "&.Mui-focused fieldset": {
+      borderColor: "#2c72f6",
     },
   },
 } as const;

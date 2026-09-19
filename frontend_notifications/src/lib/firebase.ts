@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp } from "firebase/app";
 import {
   getMessaging,
   isSupported,
@@ -9,7 +9,7 @@ import {
   unregister,
   type MessagePayload,
   type Messaging,
-} from 'firebase/messaging';
+} from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,34 +24,36 @@ const app = initializeApp(firebaseConfig);
 
 async function getMessagingInstance(): Promise<Messaging> {
   if (!(await isSupported())) {
-    throw new Error('Firebase Cloud Messaging is not supported by this browser');
+    throw new Error(
+      "Firebase Cloud Messaging is not supported by this browser",
+    );
   }
 
   return getMessaging(app);
 }
 
 async function getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
-  if (!('serviceWorker' in navigator)) {
-    throw new Error('Service Workers are not supported by this browser');
+  if (!("serviceWorker" in navigator)) {
+    throw new Error("Service Workers are not supported by this browser");
   }
 
-  await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  await navigator.serviceWorker.register("/firebase-messaging-sw.js");
   return navigator.serviceWorker.ready;
 }
 
 export async function registerForPushNotifications(): Promise<string> {
-  if (!('Notification' in window)) {
-    throw new Error('Notifications are not supported by this browser');
+  if (!("Notification" in window)) {
+    throw new Error("Notifications are not supported by this browser");
   }
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    throw new Error('Notification permission was not granted');
+  if (permission !== "granted") {
+    throw new Error("Notification permission was not granted");
   }
 
   const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
   if (!vapidKey) {
-    throw new Error('VITE_FIREBASE_VAPID_KEY is not configured');
+    throw new Error("VITE_FIREBASE_VAPID_KEY is not configured");
   }
 
   const messaging = await getMessagingInstance();
@@ -64,7 +66,7 @@ export async function registerForPushNotifications(): Promise<string> {
       if (settled) return;
       settled = true;
       unsubscribe();
-      reject(new Error('Timed out waiting for Firebase Installation ID'));
+      reject(new Error("Timed out waiting for Firebase Installation ID"));
     }, 15_000);
 
     const unsubscribe = onRegistered(messaging, (installationId) => {
@@ -105,5 +107,32 @@ export async function listenForForegroundMessages(
   listener: (payload: MessagePayload) => void,
 ): Promise<() => void> {
   const messaging = await getMessagingInstance();
-  return onMessage(messaging, listener);
+  const registration = await getServiceWorkerRegistration();
+
+  return onMessage(messaging, (payload) => {
+    // Mantiene el comportamiento actual de la aplicación, incluido el snackbar.
+    listener(payload);
+
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+      return;
+    }
+
+    const title =
+      payload.notification?.title ?? payload.data?.title ?? "Notifications";
+
+    const options: NotificationOptions = {
+      body: payload.notification?.body ?? payload.data?.body ?? "",
+      data: payload.data ?? {},
+      ...(payload.messageId ? { tag: payload.messageId } : {}),
+    };
+
+    void registration
+      .showNotification(title, options)
+      .catch((error: unknown) => {
+        console.error(
+          "[Firebase] Could not display foreground notification:",
+          error,
+        );
+      });
+  });
 }
