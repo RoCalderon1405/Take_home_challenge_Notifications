@@ -1,421 +1,348 @@
 <div align="center">
 
-🔔 Notifications Platform
+# 🔔 Notifications Platform
 
-Full-stack take-home challenge
+### Full-stack notification delivery platform
 
-Build, queue and track Email, SMS and browser Push notifications through interchangeable providers.
+Create, queue, send and track **Email**, **SMS** and **Web Push** notifications through interchangeable providers.
 
-Live application · Swagger API · Coverage · Repository
+[![Backend CI](https://github.com/RoCalderon1405/Take_home_challenge_Notifications/actions/workflows/main.yml/badge.svg)](https://github.com/RoCalderon1405/Take_home_challenge_Notifications/actions/workflows/main.yml)
+[![Coverage Status](https://coveralls.io/repos/github/RoCalderon1405/Take_home_challenge_Notifications/badge.svg?branch=main)](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![UI](https://img.shields.io/badge/UI-English%20%7C%20Español-7C3AED)
+
+**[🌐 Live App](https://notifications-frontend.onrender.com/)**
+&nbsp;•&nbsp;
+**[📘 Swagger](https://notifications-api-karp.onrender.com/api/docs)**
+&nbsp;•&nbsp;
+**[📚 Compodoc](https://backend-documentation-fmou.onrender.com/)**
+&nbsp;•&nbsp;
+**[📊 Coverage](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main)**
 
 <br />
 
-<img src="https://skillicons.dev/icons?i=ts,nodejs,nestjs,react,vite,materialui,prisma,postgres,redis,docker,firebase" alt="TypeScript, Node.js, NestJS, React, Vite, Material UI, Prisma, PostgreSQL, Redis, Docker and Firebase" />
+![Technology stack](https://skillicons.dev/icons?i=ts,nodejs,nestjs,react,vite,materialui,prisma,postgres,redis,docker,firebase)
 
 </div>
 
-What this project demonstrates
-
-<table>
-<tr>
-<td width="33%" valign="top">
-<h3>⚡ Asynchronous delivery</h3>
-<p>BullMQ and Redis move provider work outside the HTTP request and support delivery retries and tracking.</p>
-</td>
-<td width="33%" valign="top">
-<h3>🔌 Extensible providers</h3>
-<p>Strategy, Registry and Adapter patterns isolate Resend, Twilio, Firebase and console implementations.</p>
-</td>
-<td width="33%" valign="top">
-<h3>🧱 Clean boundaries</h3>
-<p>DTOs, application models and mappers keep controllers and business flows decoupled from Prisma and vendor SDKs.</p>
-</td>
-</tr>
-<tr>
-<td width="33%" valign="top">
-<h3>🔐 Complete authentication</h3>
-<p>Email/password and Google OAuth 2.0 sign-in issue the same application JWT and protect owner-scoped resources.</p>
-</td>
-<td width="33%" valign="top">
-<h3>🧪 Automated quality</h3>
-<p>Unit and end-to-end tests, linting, production builds, GitHub Actions, CircleCI and Coveralls.</p>
-</td>
-<td width="33%" valign="top">
-<h3>🚀 Reproducible delivery</h3>
-<p>Docker Compose starts the complete stack, while Render publishes the frontend and backend through CI/CD.</p>
-</td>
-</tr>
-</table>
-
-[!NOTE]
-The codebase follows SOLID principles and uses boundaries inspired by Clean Architecture. The goal is practical separation and extensibility without turning a take-home challenge into unnecessary infrastructure.
-
-Try the hosted application
-
-Service
-
-Public URL
-
-Frontend
-
-notifications-frontend.onrender.com
-
-Backend
-
-notifications-api-karp.onrender.com
-
-Swagger / OpenAPI
-
-notifications-api-karp.onrender.com/api/docs
-
-Coverage
-
-Coveralls report
-
-Compodoc
-
-Pending publication — Render guide
-
-[!IMPORTANT]
-The backend uses a free Render instance. After inactivity, its first request can take 50 seconds or more while the service starts. Open Swagger and wait for it to respond before evaluating the frontend. This delay does not affect the local Docker environment.
-
-Run everything locally
-
-Requirements
-
-Docker Desktop with Linux containers, or Docker Engine with Docker Compose v2.
-
-Free ports: 3000, 5173, 5432 and 6379.
-
-Internet access for the first build.
-
-No local Node.js, PostgreSQL or Redis installation is required.
-
-1. Prepare the environment
-
-Create the root .env once from the supplied example and adjust it only if needed.
-
-cp .env.example .env
-
-On Windows you can copy the file from Explorer or use the PowerShell helper shown below.
-
-2. Start the complete stack
-
-docker compose up --build --wait
-
-That command starts:
-
-Container
-
-Port
-
-Responsibility
-
-Frontend
-
-5173
-
-React application
-
-Backend
-
-3000
-
-NestJS REST API and notification worker
-
-PostgreSQL
-
-5432
-
-Users, notifications and delivery attempts
-
-Redis
-
-6379
-
-BullMQ jobs and queue state
-
-During startup, the backend generates the Prisma client, applies migrations, loads the seed and waits for its dependencies to become healthy.
-
-Optional one-command helpers
-
-The helpers create .env only when it is missing and preserve any existing provider configuration.
-
-Windows — PowerShell
-
-powershell -ExecutionPolicy Bypass -File .\start.ps1
-
-macOS / Linux — Bash
-
-bash ./start.sh
-
-Open the services
-
-Frontend http://localhost:5173
-Backend http://localhost:3000/api
-Swagger http://localhost:3000/api/docs
-PostgreSQL localhost:5432
-Redis localhost:6379
-
-Default local account:
-
-Email: demo@notifications.local
-Password: Demo1234!
-
-The account and sample notifications are generated by the local seed. They are for local evaluation and do not guarantee access to the hosted environment.
-
-What you can evaluate
-
-Area
-
-Available behavior
-
-Authentication
-
-Email/password login, Google OAuth 2.0, JWT Bearer authorization and role checks
-
-Notifications
-
-Create, search, filter, sort, edit, delete and resend owner-scoped notifications
-
-Channels
-
-Email, SMS and browser Push
-
-Providers
-
-Console adapters, Resend, Twilio and Firebase
-
-Delivery
-
-Queued processing, retries, persisted attempts and provider references
-
-Webhooks
-
-Signed Resend and Twilio events update delivery status
-
-Frontend
-
-Responsive React interface, light/dark preferences and English/Spanish language switching
-
-API
-
-Protected endpoints, request validation and interactive Swagger documentation
-
-Suggested evaluation flow
-
-1. Sign in with the demo account or Google.
-2. Switch the interface between English and Spanish.
-3. Review the dashboard and notification list.
-4. Create an Email, SMS or Push notification.
-5. Open its detail page and inspect the delivery attempt.
-6. Select "Send again" and confirm that a new attempt appears.
-7. Explore the protected API from Swagger.
-
-[!TIP]
-The default Docker environment uses console providers. It exercises validation, PostgreSQL persistence, BullMQ processing and delivery tracking without requiring external credentials or sending real messages.
-
-Architecture
-
-flowchart TD
-UI[React frontend] --> API[NestJS API]
-API --> DB[(PostgreSQL)]
-API --> Q[(Redis / BullMQ)]
-Q --> W[Notification worker]
-W --> R[Strategy registry]
-R --> S[Email / SMS / Push strategy]
-S --> A[Provider adapter]
-A --> P[Resend / Twilio / Firebase]
-P --> WH[Signed webhook]
-WH --> API
-
-The API validates and persists a notification, then places its delivery in BullMQ. The worker resolves a channel strategy from the registry and delegates the provider-specific operation to an adapter.
-
-Why the provider layer is extensible
-
+---
+
+## Overview
+
+**Notifications Platform** is a full-stack notification management system built to create, process, send and track notifications through multiple delivery channels.
+
+The backend persists notifications in PostgreSQL, queues delivery work with **BullMQ + Redis**, resolves the correct channel strategy, delegates delivery to the configured provider and tracks provider responses and webhook events.
+
+| Area               | Implementation                                                     |
+| ------------------ | ------------------------------------------------------------------ |
+| **Frontend**       | React, Vite, TypeScript, Material UI, React Router, Redux, i18n    |
+| **Backend**        | NestJS, TypeScript, Prisma                                         |
+| **Database**       | PostgreSQL                                                         |
+| **Queue / Cache**  | Redis + BullMQ                                                     |
+| **Email**          | Console / Resend                                                   |
+| **SMS**            | Console / Twilio                                                   |
+| **Push**           | Console / Firebase Cloud Messaging                                 |
+| **Authentication** | Email/password + JWT Bearer                                        |
+| **API docs**       | Swagger / OpenAPI                                                  |
+| **Code docs**      | Compodoc                                                           |
+| **Deployment**     | Docker Compose + Render                                            |
+| **Quality**        | ESLint, unit tests, E2E tests, GitHub Actions, CircleCI, Coveralls |
+
+> [!NOTE]
+> Google OAuth 2.0 is intentionally left as a **future improvement**. The current completed authentication flow uses email/password with JWT Bearer tokens.
+
+---
+
+## Live services
+
+| Service                  | URL                                                                                                              |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| 🌐 **Frontend**          | [Open application](https://notifications-frontend.onrender.com/)                                                 |
+| ⚙️ **Backend API**       | [Open API](https://notifications-api-karp.onrender.com/)                                                         |
+| 📘 **Swagger / OpenAPI** | [Open Swagger](https://notifications-api-karp.onrender.com/api/docs)                                             |
+| 📚 **Compodoc**          | [Open backend documentation](https://backend-documentation-fmou.onrender.com/)                                   |
+| 📊 **Coveralls**         | [Open coverage report](https://coveralls.io/github/RoCalderon1405/Take_home_challenge_Notifications?branch=main) |
+| 💻 **Repository**        | [Open GitHub repository](https://github.com/RoCalderon1405/Take_home_challenge_Notifications)                    |
+
+> [!IMPORTANT]
+> The backend is hosted on a free Render instance. After a period of inactivity, the first request may take around a minute while the service wakes up.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI[React + Vite] --> API[NestJS API]
+    API --> DB[(PostgreSQL)]
+    API --> Q[(Redis / BullMQ)]
+    Q --> W[Notification Worker]
+    W --> SR[Sender Registry]
+    SR --> CH[Email / SMS / Push Strategy]
+    CH --> PR[Provider Adapter]
+    PR --> EXT[Resend / Twilio / Firebase]
+    EXT --> WH[Provider Webhook]
+    WH --> API
+```
+
+The request lifecycle is intentionally decoupled from provider delivery:
+
+```text
+HTTP request
+   ↓
+Validation
+   ↓
+PostgreSQL persistence
+   ↓
+BullMQ job
+   ↓
+Worker
+   ↓
+Channel strategy
+   ↓
+Provider adapter
+   ↓
+Delivery tracking / webhook update
+```
+
+### Provider extensibility
+
+```text
 NotificationDispatcher
 └── NotificationSenderRegistry
-├── EmailSenderStrategy ──> EmailProvider ──> Console | Resend
-├── SmsSenderStrategy ──> SmsProvider ──> Console | Twilio
-└── PushSenderStrategy ──> PushProvider ──> Console | Firebase
+    ├── EmailSenderStrategy ──> EmailProvider ──> Console | Resend
+    ├── SmsSenderStrategy   ──> SmsProvider   ──> Console | Twilio
+    └── PushSenderStrategy  ──> PushProvider  ──> Console | Firebase
+```
 
-The orchestration depends on contracts instead of vendor SDKs. To integrate another provider into an existing channel:
+The orchestration layer depends on contracts rather than vendor SDKs. Adding another provider to an existing channel requires implementing the corresponding provider contract, registering it through NestJS dependency injection and adding its validated configuration.
 
-Implement the corresponding provider contract.
+---
 
-Register the implementation through NestJS dependency injection.
+## Features
 
-Add its validated configuration.
+| Feature                                         |        Status         |
+| ----------------------------------------------- | :-------------------: |
+| Email/password authentication                   |          ✅           |
+| JWT Bearer authorization                        |          ✅           |
+| Owner-scoped notifications                      |          ✅           |
+| Create, update, delete and resend notifications |          ✅           |
+| Search, filter and sort                         |          ✅           |
+| Email delivery                                  |          ✅           |
+| SMS delivery                                    |          ✅           |
+| Browser Push delivery                           |          ✅           |
+| Asynchronous processing with BullMQ             |          ✅           |
+| Delivery attempts and provider references       |          ✅           |
+| Resend webhook handling                         |          ✅           |
+| Twilio webhook handling                         |          ✅           |
+| Firebase Cloud Messaging                        |          ✅           |
+| English / Spanish UI                            |          ✅           |
+| Light / dark preferences                        |          ✅           |
+| Swagger documentation                           |          ✅           |
+| Compodoc documentation                          |          ✅           |
+| Docker Compose development environment          |          ✅           |
+| CI and coverage                                 |          ✅           |
+| Google OAuth 2.0                                | ⏳ Future improvement |
 
-The notification lifecycle, queue and tracking logic remain unchanged. This is where the project applies runtime polymorphism, the Strategy Pattern, the Adapter Pattern and the Open/Closed Principle.
+---
 
-A SENT state means that the provider accepted the request. Final delivery is tracked independently when status events or webhooks are available.
+## Run locally
 
-Repository structure
+### Requirements
 
-.
-├── backend_notifications/ # NestJS, Prisma, BullMQ and provider integrations
-│ └── README.md # Backend architecture and development guide
-├── frontend_notifications/ # React, Vite, Material UI, OAuth, i18n and Push
-│ └── README.md # Frontend architecture and development guide
-├── docs/
-│ └── compodoc-render.md # Compodoc publication guide
-├── docker-compose.yml # Complete local environment
-├── start.ps1 # Windows startup helper
-└── start.sh # macOS/Linux startup helper
+- Docker Desktop with Linux containers, or Docker Engine with Docker Compose v2.
+- Ports `3000`, `5173`, `5432` and `6379` available.
+- Internet access for the initial image/dependency download.
 
-Development commands
+No local PostgreSQL or Redis installation is required.
 
-<details>
-<summary><strong>🐳 Docker commands</strong></summary>
+### 1. Clone the repository
 
-Show service status:
+```bash
+git clone https://github.com/RoCalderon1405/Take_home_challenge_Notifications.git
+cd Take_home_challenge_Notifications
+```
 
+### 2. Prepare environment variables
+
+macOS / Linux:
+
+```bash
+cp .env.example .env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### 3. Start the complete stack
+
+```bash
+docker compose up --build --wait
+```
+
+Or use the included helpers.
+
+Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+macOS / Linux:
+
+```bash
+bash ./start.sh
+```
+
+### 4. Open the local services
+
+| Service    | Local address                    |
+| ---------- | -------------------------------- |
+| Frontend   | `http://localhost:5173`          |
+| Backend    | `http://localhost:3000/api`      |
+| Swagger    | `http://localhost:3000/api/docs` |
+| PostgreSQL | `localhost:5432`                 |
+| Redis      | `localhost:6379`                 |
+
+### Demo account
+
+```text
+Email:    demo@notifications.local
+Password: Demo1234!
+```
+
+The local seed creates this account and sample data for evaluation.
+
+---
+
+## Notification providers
+
+The default local environment uses **console providers**, which lets the complete application flow run without external credentials or real messages.
+
+| Channel | Local default | Real integration         |
+| ------- | ------------- | ------------------------ |
+| Email   | Console       | Resend                   |
+| SMS     | Console       | Twilio                   |
+| Push    | Console       | Firebase Cloud Messaging |
+
+External provider credentials belong in environment variables and must never be committed to Git.
+
+---
+
+## Development commands
+
+### Docker
+
+```bash
 docker compose ps
-
-Follow application logs:
-
 docker compose logs -f backend frontend
-
-Stop the stack and retain its volumes:
-
-docker compose down
-
-Start it again without rebuilding:
-
 docker compose up -d --wait
+docker compose down
+```
 
-Develop with source synchronization:
+Development watch mode:
 
+```bash
 docker compose up --build --watch
+```
 
-Rebuild after dependency or configuration changes:
+Rebuild services after dependency or configuration changes:
 
+```bash
 docker compose up -d --build --force-recreate --wait
+```
 
-</details>
+### Backend
 
-<details>
-<summary><strong>🧪 Backend quality checks</strong></summary>
-
+```bash
 cd backend_notifications
 npm ci
 npm run lint
 npm test
 npm run test:e2e
 npm run build
+```
 
-</details>
+Generate and inspect Compodoc locally:
 
-<details>
-<summary><strong>⚛️ Frontend quality checks</strong></summary>
+```bash
+npm run docs
+npm run docs:serve
+```
 
+### Frontend
+
+```bash
 cd frontend_notifications
 npm ci
 npm run lint
 npm test
 npm run build
+```
 
-</details>
+---
 
-<details>
-<summary><strong>🛠️ Troubleshooting</strong></summary>
+## Repository structure
 
-Problem
+```text
+.
+├── backend_notifications/
+│   ├── src/
+│   ├── prisma/
+│   └── README.md
+├── frontend_notifications/
+│   ├── public/
+│   ├── src/
+│   └── README.md
+├── docs/
+│   └── compodoc-render.md
+├── docker-compose.yml
+├── start.ps1
+├── start.sh
+└── README.md
+```
 
-What to check
+---
 
-Docker cannot connect
+## Documentation
 
-Start Docker Desktop or Docker Engine and try again
+| Resource                                                           | Description                                                           |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| [⚛️ Frontend guide](frontend_notifications/README.md)              | Frontend structure, API integration, state, i18n, Push and deployment |
+| [🛡️ Backend guide](backend_notifications/README.md)                | Modules, Prisma, queues, providers, webhooks, tests and deployment    |
+| [📘 Swagger](https://notifications-api-karp.onrender.com/api/docs) | Interactive REST API documentation                                    |
+| [📚 Compodoc](https://backend-documentation-fmou.onrender.com/)    | Backend source-code documentation                                     |
+| [📄 Compodoc deployment guide](docs/compodoc-render.md)            | How the static documentation is generated and deployed                |
 
-Port already allocated
+---
 
-Stop the conflicting process or update every related URL and port consistently
+## Quality and delivery
 
-Backend health check fails
+| CI / Quality                                           | Deployment                                    |
+| ------------------------------------------------------ | --------------------------------------------- |
+| GitHub Actions validates the project.                  | Render hosts the frontend and backend.        |
+| CircleCI validates the backend and publishes coverage. | Compodoc is deployed as a Render Static Site. |
+| Coveralls tracks backend test coverage.                | Secrets remain outside the repository.        |
 
-Run docker compose logs --tail=100 backend and verify PostgreSQL and Redis
+---
 
-Provider configuration fails
+## Future improvements
 
-Review the existing .env; startup helpers never overwrite it
+- Complete Google OAuth 2.0 using the existing Bearer-token architecture.
+- Expand frontend automated test coverage.
+- Add more notification providers without changing the notification lifecycle.
+- Add deeper observability and operational metrics.
 
-Google login fails
+---
 
-Verify client credentials, authorized origins and callback URLs for the current environment
+## Author
 
-</details>
-
-Quality and delivery
-
-<table>
-<tr>
-<td width="50%" valign="top">
-<h3>Continuous Integration</h3>
-<ul>
-<li>GitHub Actions: lint, unit tests, E2E tests and backend build.</li>
-<li>CircleCI: backend validation and coverage upload.</li>
-<li>Coveralls: coverage history for the main branch.</li>
-</ul>
-</td>
-<td width="50%" valign="top">
-<h3>Continuous Delivery</h3>
-<ul>
-<li>Render hosts the frontend and backend independently.</li>
-<li>Services deploy from their configured repository branch.</li>
-<li>Secrets remain in the deployment environment.</li>
-</ul>
-</td>
-</tr>
-</table>
-
-The current automated workflows focus primarily on the backend. Frontend lint, test and production build commands are available locally and documented in its guide.
-
-Documentation
-
-<table>
-<tr>
-<td width="50%" valign="top">
-<h3>⚛️ Frontend</h3>
-<p>Pages, state management, Google OAuth, internationalization, API client, Push notifications, testing and Render deployment.</p>
-<p><a href="frontend_notifications/README.md"><strong>Open frontend guide →</strong></a></p>
-</td>
-<td width="50%" valign="top">
-<h3>🛡️ Backend</h3>
-<p>Modules, authentication, Prisma, queues, provider strategies, webhooks, testing, configuration and deployment.</p>
-<p><a href="backend_notifications/README.md"><strong>Open backend guide →</strong></a></p>
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-<h3>📘 Swagger</h3>
-<p>Interactive REST API documentation, schemas and Bearer authentication.</p>
-<p><a href="https://notifications-api-karp.onrender.com/api/docs"><strong>Open Swagger →</strong></a></p>
-</td>
-<td width="50%" valign="top">
-<h3>📚 Compodoc</h3>
-<p>Generated backend source documentation. Its public link will be added after the Render Static Site is deployed.</p>
-<p><a href="docs/compodoc-render.md"><strong>Open publication guide →</strong></a></p>
-</td>
-</tr>
-</table>
-
-Preview before committing
-
-Open README.md in VS Code and press:
-
-Ctrl + K, then V
-
-This opens the Markdown preview beside the editor. GitHub remains the final reference for badges, Mermaid diagrams and HTML cards.
-
-Author
-
-<div align="center">
-
-Roberto Tonatiuh Calderon Aguilar<br />
+**Roberto Tonatiuh Calderon Aguilar**  
 Full Stack Developer
 
-GitHub · Portfolio · Repository
-
-</div>
+[GitHub](https://github.com/RoCalderon1405) ·
+[Portfolio](https://portfoliorocalderon.netlify.app/#experience) ·
+[Repository](https://github.com/RoCalderon1405/Take_home_challenge_Notifications)
