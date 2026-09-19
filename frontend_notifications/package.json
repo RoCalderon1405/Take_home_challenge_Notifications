@@ -2,6 +2,9 @@
   "name": "frontend_notifications",
   "private": true,
   "version": "1.0.0",
+  "description": "Backend service for a full-stack notifications platform with JWT authentication, PostgreSQL, Redis, multi-channel delivery, provider webhooks, delivery tracking, Swagger and automated documentation.",
+  "author": "Ulises Fernando Jurado Mora",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",
