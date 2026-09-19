@@ -344,5 +344,5 @@ npm run build
 Full Stack Developer
 
 [GitHub](https://github.com/RoCalderon1405) ·
-[Portfolio](https://portfoliorocalderon.netlify.app/#experience) ·
+[Portfolio](https://portfoliorocalderon.netlify.app/) ·
 [Repository](https://github.com/RoCalderon1405/Take_home_challenge_Notifications)
